@@ -57,3 +57,17 @@ Request configured scanner paths such as `/.env` or `/.git/`.
 
 - Dry Run ON: request is not rejected by News Cache Guard, but `Would block` increments.
 - Dry Run OFF: configured 404/403 is returned before normal theme rendering.
+
+## 9. MU Search Guard: strict 3-search control
+
+- Copy `mu-plugins/wp-search-guard.php` to the **top level** of `wp-content/mu-plugins/`; confirm the status card reports MU ACTIVE.
+- With Redis functional, make four *uncached* anonymous searches in one fixed UTC 60-second window. The fourth request must receive HTTP 429 with a positive `Retry-After`, `Cache-Control: no-store`, and a plain-text response.
+- Repeat for standard pretty `/search/` URLs and confirm `?s[]=` / >160-byte inputs return HTTP 400.
+- Check that MU-handled requests are not incremented again by the ordinary plugin at `plugins_loaded` / `template_redirect`.
+- Verify two distinct IPv4 clients have separate budgets, while two IPv6 addresses in a /64 share the budget.
+- Test with a genuine trusted Cloudflare edge and with a spoofed `CF-Connecting-IP` header from an untrusted source; verify only trusted edge addresses can supply visitor identity.
+- Test when Redis is disabled: fail-open is intended and must be visible to operators.
+- Turn the normal plugin's Dry Run ON while MU is active: MU must **still** reject the fourth search. Test rollback by removing the MU file.
+- Repeat with LiteSpeed and Cloudflare search-page caching configurations; requests served without PHP cannot be counted.
+
+Local logic checks: `php tests/mu-search-guard.php`.

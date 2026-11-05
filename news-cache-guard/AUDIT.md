@@ -37,3 +37,7 @@ Scope: user-provided `news-cache-guard-v1.0.1-hotfix.zip`, tested and patched be
 ## Default rollout
 
 Keep `dry_run=1`, `default_policy=safe_shared`, `query_collapse=1`; confirm server-side LSCache and Redis health on staging, backup `.htaccess`, then test the scenarios in `TESTING.md`. Never enable `force_cache` for unknown third-party WordPress stacks.
+
+## 1.0.3 addendum — search protection
+
+Added early Must-Use search guard with a 3-per-fixed-minute limit and proper coexistence with the original search limiter. The main plugin cannot guarantee an enforced cap while Dry Run is active; the MU file must be deployed separately for independent early enforcement. Cached responses and nonstandard search endpoints are outside the MU guard scope. Tests exercise counters, IPv4/IPv6, invalid inputs, Cloudflare trust, Redis fail-open, and duplicate-count prevention. No live Cloudways/Redis integration has been performed.

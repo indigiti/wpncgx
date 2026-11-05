@@ -1,10 +1,14 @@
 # News Cache Guard for LiteSpeed
 
-Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. The installable plugin lives in [`news-cache-guard/`](news-cache-guard/). Version 1.0.2 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
+Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. The installable plugin lives in [`news-cache-guard/`](news-cache-guard/). Version 1.0.3 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
 
 ## Install
 
 Upload a ZIP containing the `news-cache-guard/` directory using **Plugins → Add New → Upload Plugin**, then visit **Settings → News Cache Guard**. Keep Dry Run enabled until origin-limit thresholds are proven on staging. Read [INSTALL.md](news-cache-guard/INSTALL.md), [SECURITY.md](news-cache-guard/SECURITY.md), and [TESTING.md](news-cache-guard/TESTING.md) before enforcement.
+
+## Strict search protection
+
+The optional early **Search Guard MU** component enforces **3 searches per visitor per fixed 60-second window** on `?s=` and standard `/search/` URLs. For strict enforcement, copy `news-cache-guard/mu-plugins/wp-search-guard.php` to `wp-content/mu-plugins/wp-search-guard.php` and verify Redis. Without the MU file, the ordinary plugin has a three-per-minute fallback subject to Dry Run. See [MU installation / risks](news-cache-guard/MU-SEARCH-GUARD.md).
 
 ## Operational caveats
 
@@ -12,6 +16,6 @@ The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests 
 
 ## Validation
 
-Run `php news-cache-guard/tests/regression.php` for self-contained logic checks and `find news-cache-guard -name '*.php' -print0 | xargs -0 -n 1 php -l` for syntax validation. These do not replace integration testing with WordPress + LiteSpeed + Redis on a staging deployment.
+Run `php news-cache-guard/tests/regression.php` and `php news-cache-guard/tests/mu-search-guard.php` for self-contained logic checks and `find news-cache-guard -name '*.php' -print0 | xargs -0 -n 1 php -l` for syntax validation. These do not replace integration testing with WordPress + LiteSpeed + Redis on a staging deployment.
 
 License: GPL-2.0-or-later.

@@ -26,6 +26,10 @@
 13. Review Dry Run counters during normal crawler traffic.
 14. Disable Dry Run only after thresholds are validated.
 
+## MU Search Guard installation (strict search enforcement)
+
+The WordPress plugin ZIP also contains `mu-plugins/wp-search-guard.php` but **WordPress does not automatically install nested MU files**. Copy it manually from the plugin into `wp-content/mu-plugins/wp-search-guard.php` using Cloudways SFTP/SSH. Confirm **Settings → News Cache Guard → Search Guard (3/60s) = MU ACTIVE**. This strict limit is active even with the normal plugin's Dry Run ON, and requires an atomic persistent object cache. The regular plugin fallback remains Dry Run-aware. Full details and rollback instructions: [MU-SEARCH-GUARD.md](MU-SEARCH-GUARD.md).
+
 ## Recommended starting defaults
 
 - Default policy: Safe Shared Cache (respects LSCWP's own cache exclusions)
@@ -38,7 +42,7 @@
 - IPv6 bucket: /64
 - Excess action: 429
 - Query collapse: ON
-- Dry Run: ON for rollout, OFF after validation
+- Dry Run: ON for rollout, OFF after validation (**MU Search Guard still enforces** if installed)
 
 ## LiteSpeed Serve Stale
 

@@ -45,12 +45,15 @@ final class Admin {
         $notice = isset($_GET['ncg_notice']) ? sanitize_text_field(wp_unslash($_GET['ncg_notice'])) : '';
         $ls = LiteSpeed::detected();
         $redis = Counter::available();
+        $muSearch = defined('NCG_MU_SEARCH_GUARD_LOADED');
         $rules = Htaccess::rules();
         ?>
         <div class="wrap">
             <h1>News Cache Guard for LiteSpeed <small style="font-size:13px">v<?php echo esc_html(NCG_VERSION); ?></small></h1>
             <?php if ($notice): ?><div class="notice notice-info"><p><?php echo esc_html($notice); ?></p></div><?php endif; ?>
             <?php if (!$redis): ?><div class="notice notice-warning"><p><strong>Fail-open:</strong> no persistent object cache was detected. Rate limits are disabled so the plugin cannot block traffic due to missing Redis/object cache.</p></div><?php endif; ?>
+            <?php if (!$muSearch): ?><div class="notice notice-warning"><p><strong>Search Guard MU not installed:</strong> the 3-search fallback obeys this plugin's Dry Run switch. For strict early enforcement independent of Dry Run, copy <code>news-cache-guard/mu-plugins/wp-search-guard.php</code> to <code>wp-content/mu-plugins/wp-search-guard.php</code>.</p></div><?php endif; ?>
+            <?php if ($muSearch && $s['dry_run']): ?><div class="notice notice-info"><p><strong>Search Guard MU is active:</strong> its 3-per-60-second limit enforces even while News Cache Guard Dry Run is on. All other limits continue to follow Dry Run.</p></div><?php endif; ?>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;max-width:1000px;margin:16px 0">
                 <?php $cards = [
                     ['LiteSpeed Cache', $ls ? 'DETECTED' : 'CHECK SERVER'],
@@ -59,6 +62,7 @@ final class Admin {
                     ['Default Policy', strtoupper(str_replace('_',' ',(string)$s['default_policy']))],
                     ['IPv6 Bucket', '/'.(int)$s['ipv6_prefix']],
                     ['Query Collapse', $s['query_collapse'] ? 'ON' : 'OFF'],
+                    ['Search Guard (3/60s)', $muSearch ? 'MU ACTIVE' : 'FALLBACK'],
                 ]; foreach ($cards as [$a,$b]): ?>
                     <div style="background:#fff;border:1px solid #dcdcde;padding:14px"><div style="font-size:12px;color:#646970"><?php echo esc_html($a); ?></div><strong><?php echo esc_html($b); ?></strong></div>
                 <?php endforeach; ?>
@@ -94,7 +98,7 @@ final class Admin {
                     <?php $this->number('unique_url_limit','Unique uncached URL allowance',$s,1,10000); ?>
                     <?php $this->number('unique_url_window','Unique URL window (seconds)',$s,5,3600); ?>
                     <?php $this->number('limit_404','404 origin limit',$s,1,10000); ?>
-                    <?php $this->number('search_limit','Search limit',$s,1,10000); ?>
+                    <tr><th>Search rate limit</th><td><strong>3 searches per IP/IPv6 /64 per fixed 60-second window</strong><p class="description">MU module enforces independently of Dry Run; without MU, the ordinary plugin falls back to the same cap but respects Dry Run. Requires persistent, atomic object cache.</p></td></tr>
                     <?php $this->number('rest_limit','REST limit',$s,1,10000); ?>
                 </table>
 

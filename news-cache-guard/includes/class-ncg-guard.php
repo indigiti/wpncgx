@@ -39,7 +39,8 @@ final class Guard {
         // Search SQL executes before template_redirect. Count here instead of
         // waiting for a costly query to finish. This is origin-side protection;
         // cache hits never reach PHP.
-        if ($this->is_frontend_candidate() && $this->is_search_uri($path)) {
+        if ($this->is_frontend_candidate() && $this->is_search_uri($path)
+            && !defined('NCG_MU_SEARCH_GUARD_HANDLED')) {
             $this->init_identity();
             if (!$this->is_allowed()) {
                 $this->earlySearchChecked = true;
@@ -78,7 +79,7 @@ final class Guard {
 
         if (is_search()) {
             LiteSpeed::no_cache();
-            if (!$this->earlySearchChecked) {
+            if (!$this->earlySearchChecked && !defined('NCG_MU_SEARCH_GUARD_HANDLED')) {
                 $count = Counter::increment('search', $this->identity, (int)Settings::get('search_window', 60));
                 if ($count > (int)Settings::get('search_limit', 10)) $this->block_or_dry('search-rate');
             }

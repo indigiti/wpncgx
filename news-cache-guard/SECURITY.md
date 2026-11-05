@@ -18,3 +18,7 @@ This plugin is designed to protect origin resources, not to replace a WAF or DDo
 - WordPress's `xmlrpc_enabled` filter alone does not disable unauthenticated pingbacks. Version 1.0.2 also rejects requests targeting `xmlrpc.php` when mode is Disable.
 - Query-collapse rules are applied at the LiteSpeed layer to all matching requests; never add a key that changes page content. Test any custom wildcard thoroughly.
 - The plugin cannot guarantee rate limits when PHP is reached through alternate entry points, or when the external object cache is unhealthy.
+
+## Search Guard MU security boundary (v1.0.3)
+
+`wp-search-guard.php` executes at `muplugins_loaded`. Do not use `is_user_logged_in()` here; WordPress pluggable authentication functions may not yet be available. This guard applies to eligible front-end searches whether or not the user is logged in. It trusts `CF-Connecting-IP` only when the socket's `REMOTE_ADDR` matches the stored trusted proxy CIDRs (Cloudflare defaults when unset), never any untrusted `X-Forwarded-For`. Keep Cloudflare ranges current and ensure Cloudways sets `REMOTE_ADDR` correctly behind additional proxies. Search counters require a persistent object cache whose `add` and `incr` are atomic across workers. The presence of an object-cache drop-in alone is insufficient proof. A fixed window is not a sliding-window upper bound, and origin PHP cannot protect requests served from an edge or page cache.

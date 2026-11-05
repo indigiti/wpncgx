@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 
 Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
@@ -59,6 +59,12 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.0.3 =
+* Add standalone must-use search guard for 3 searches per fixed 60-second window; manual MU installation required.
+* Make legacy search fallback 3/min and avoid double-counting MU-handled requests.
+* Add tested Cloudflare IP trust handling and MU status dashboard.
+
 = 1.0.2 =
 * Restrict explicit Force Cache to public content without personalization cookies or unknown query parameters.
 * Allowlisted clients no longer force public caching; safe-shared policies defer to native LiteSpeed exclusions.

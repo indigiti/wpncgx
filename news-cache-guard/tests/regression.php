@@ -107,12 +107,19 @@ reset_actions();
 (new \NCG\Guard())->frontend_guard();
 check(!in_array('litespeed_control_set_cacheable', $GLOBALS['ncg_actions'], true), 'Safe Shared Cache defers to LSCWP eligibility');
 
-config(['search_limit'=>1,'dry_run'=>1]);
+config(['search_limit'=>999,'dry_run'=>1]);
+check(\NCG\Settings::get('search_limit') === 3, 'Saved search rate limit cannot exceed 3');
+check(\NCG\Settings::get('search_window') === 60, 'Search fallback window is locked to 60 seconds');
 $_SERVER['REQUEST_URI'] = '/?s=word';
 $_GET = ['s'=>'word'];
+for ($i = 0; $i < 4; $i++) (new \NCG\Guard())->early_scanner_guard();
+check(\NCG\Counter::stat_value('would_block') === 1, 'Fourth search gets rate-limited before main query');
+define('NCG_MU_SEARCH_GUARD_HANDLED', true);
 (new \NCG\Guard())->early_scanner_guard();
-(new \NCG\Guard())->early_scanner_guard();
-check(\NCG\Counter::stat_value('would_block') === 1, 'Second search gets rate-limited before main query');
+$GLOBALS['is_search'] = true;
+(new \NCG\Guard())->frontend_guard();
+$GLOBALS['is_search'] = false;
+check(\NCG\Counter::stat_value('would_block') === 1, 'MU-handled search is not counted during either regular-plugin hook');
 
 config(['rest_limit'=>1, 'dry_run'=>1]);
 $_GET = [];

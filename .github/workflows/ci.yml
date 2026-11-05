@@ -18,4 +18,6 @@ jobs:
       - name: PHP lint
         run: find news-cache-guard -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
       - name: Logic regression tests
-        run: php news-cache-guard/tests/regression.php
+        run: |
+          php news-cache-guard/tests/regression.php
+          php news-cache-guard/tests/mu-search-guard.php

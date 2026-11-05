@@ -24,7 +24,7 @@ final class Settings {
             'unique_url_window' => 60,
             'limit_404' => 2,
             'window_404' => 60,
-            'search_limit' => 10,
+            'search_limit' => 3,
             'search_window' => 60,
             'rest_limit' => 30,
             'rest_window' => 60,
@@ -56,7 +56,11 @@ final class Settings {
     public static function get_all(): array {
         $saved = get_option(self::OPTION, []);
         if (!is_array($saved)) $saved = [];
-        return array_merge(self::defaults(), $saved);
+        $all = array_merge(self::defaults(), $saved);
+        // Strict fallback cap, including sites with an older saved value of 10.
+        $all['search_limit'] = 3;
+        $all['search_window'] = 60;
+        return $all;
     }
 
     public static function get(string $key, $default = null) {
@@ -87,6 +91,10 @@ final class Settings {
             $v = isset($in[$k]) ? (int)$in[$k] : (int)$d[$k];
             $out[$k] = max($min, min($max, $v));
         }
+
+        // These safety limits cannot be raised through legacy settings.
+        $out['search_limit'] = 3;
+        $out['search_window'] = 60;
 
         $out['ipv4_prefix'] = max(8, min(32, (int)($in['ipv4_prefix'] ?? $d['ipv4_prefix'])));
         $out['ipv6_prefix'] = max(32, min(128, (int)($in['ipv6_prefix'] ?? $d['ipv6_prefix'])));

@@ -1,6 +1,6 @@
 # News Cache Guard for LiteSpeed
 
-Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.3 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
+Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.4 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
 
 ## Install
 
@@ -16,6 +16,10 @@ The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests 
 
 ## Validation
 
-Run `php tests/regression.php` and `php tests/mu-search-guard.php` for self-contained logic checks and `find . -name '*.php' -print0 | xargs -0 -n 1 php -l` for syntax validation. These do not replace integration testing with WordPress + LiteSpeed + Redis on a staging deployment.
+Run `php tests/regression.php` and `php tests/mu-search-guard.php` and `php tests/worker-guard.php` for self-contained logic checks and `find . -name '*.php' -print0 | xargs -0 -n 1 php -l` for syntax validation. These do not replace integration testing with WordPress + LiteSpeed + Redis on a staging deployment.
 
 License: GPL-2.0-or-later.
+
+## PM Worker Guard
+
+Built-in queue and SEO sitemap workload caps are active with the regular plugin. View **Tools → PM Worker Guard** and see [WORKER-GUARD.md](WORKER-GUARD.md). Do not activate the previous standalone PM Worker Guard simultaneously.

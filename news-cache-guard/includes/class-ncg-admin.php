@@ -63,10 +63,13 @@ final class Admin {
                     ['IPv6 Bucket', '/'.(int)$s['ipv6_prefix']],
                     ['Query Collapse', $s['query_collapse'] ? 'ON' : 'OFF'],
                     ['Search Guard (3/60s)', $muSearch ? 'MU ACTIVE' : 'FALLBACK'],
+                    ['PM Worker Guard', 'ACTIVE (5 / 1 DEFAULT)'],
                 ]; foreach ($cards as [$a,$b]): ?>
                     <div style="background:#fff;border:1px solid #dcdcde;padding:14px"><div style="font-size:12px;color:#646970"><?php echo esc_html($a); ?></div><strong><?php echo esc_html($b); ?></strong></div>
                 <?php endforeach; ?>
             </div>
+
+            <p><strong>Background work:</strong> PM Worker Guard limits Action Scheduler queue claims and SEO sitemap sizes. <a href="<?php echo esc_url(admin_url('tools.php?page=ncg-worker-guard')); ?>">View worker guard status and safe cron instructions</a>.</p>
 
             <h2>Today (Redis/object-cache counters)</h2>
             <table class="widefat striped" style="max-width:1000px"><tbody>

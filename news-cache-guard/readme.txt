@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 
 Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
@@ -60,6 +60,10 @@ More-specific CIDRs win.
 
 == Changelog ==
 
+= 1.0.4 =
+* Integrate PM Worker Guard (Action Scheduler 5/batch, 1 concurrent batch, Rank Math 200 and Yoast 250 sitemap entries).
+* Optional async runner shutdown only after WP-CLI cron verification; preserves existing more restrictive settings.
+
 = 1.0.3 =
 * Add standalone must-use search guard for 3 searches per fixed 60-second window; manual MU installation required.
 * Make legacy search fallback 3/min and avoid double-counting MU-handled requests.
@@ -77,3 +81,4 @@ More-specific CIDRs win.
 
 = 1.0.0 =
 * Initial production-oriented architecture.
+

@@ -51,3 +51,7 @@ Enable LiteSpeed Serve Stale in the server/LSCache configuration appropriate to 
 ## Query-collapse scope
 
 `CacheKeyModify` runs at the LiteSpeed layer before WordPress. The plugin therefore ships with a conservative list of content-invariant tracking keys and supports custom exact/prefix keys. It does **not** blindly remove every unknown query parameter, because WordPress has not yet established whether an unknown parameter changes content at cache-lookup time.
+
+## PM Worker Guard (included automatically)
+
+No extra plugin or MU file is necessary. Open **Tools → PM Worker Guard** to see status and WP-CLI examples. Defaults cap Action Scheduler queue claims to 5 actions/batch and one concurrent batch; sitemap pages to Rank Math 200 and Yoast 250. These limits do not directly control PHP-FPM workers. Do **not** disable async Action Scheduler requests until you have verified the server-side `wp action-scheduler run` command and cron schedule. See [WORKER-GUARD.md](WORKER-GUARD.md).

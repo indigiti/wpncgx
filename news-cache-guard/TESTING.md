@@ -71,3 +71,7 @@ Request configured scanner paths such as `/.env` or `/.git/`.
 - Repeat with LiteSpeed and Cloudflare search-page caching configurations; requests served without PHP cannot be counted.
 
 Local logic checks: `php tests/mu-search-guard.php`.
+
+## PM Worker Guard regression tests
+
+Run `php news-cache-guard/tests/worker-guard.php` and `php news-cache-guard/tests/worker-guard.php phase2`. Verify the plugin registered Action Scheduler, Yoast, and Rank Math filters, that smaller existing values survive caps, the sitemap option remains unchanged on WordPress admin pages, and the async shutdown filter registers only in phase 2. Test against real WordPress/SEO plugins and confirm pending actions remain stable after rollout.

@@ -20,6 +20,7 @@ final class Plugin {
         $this->guard = new Guard();
         $this->purger = new Purger();
         $this->admin = new Admin();
+        WorkerGuard::boot();
         $this->guard->boot();
         $this->purger->boot();
         if (is_admin()) $this->admin->boot();

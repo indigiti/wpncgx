@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.4 — 2026-11-05
+
+- Integrate PM Worker Guard directly into News Cache Guard, with Tools → PM Worker Guard status and safe cron guidance.
+- Cap Action Scheduler queue claims at 5 actions/batch and one concurrent batch by default; preserve lower existing filter values.
+- Cap Yoast at 250 entries/sitemap and Rank Math at 200 entries/sitemap, preserving existing lower and missing settings.
+- Default to Rank Math’s own sitemap cache decision instead of forcibly overriding explicit disable filters; optional force enable after freshness validation.
+- Keep async loopback runner enabled unless an explicit wp-config.php constant is set after successful WP-CLI cron verification.
+- Add isolated regression checks for caps, filters, admin protection and async-runner opt-in.
+
+
 ## 1.0.3 — 2026-11-05
 
 - Add standalone MU Search Guard for front-end `?s=` and standard `/search/` URLs, with an enforced three-search limit per client IPv4/IPv6 /64 in fixed 60-second windows.

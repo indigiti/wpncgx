@@ -1,3 +1,5 @@
+> **Historical audit (v1.0.2).** Sections below describe earlier releases. In v1.0.5, Force Cache has been fully retired and old settings normalize to Safe Shared Cache. See [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md) for current safeguards.
+
 # Source audit — 2026-11-05
 
 Scope: user-provided `news-cache-guard-v1.0.1-hotfix.zip`, tested and patched before repository initialization. No existing code was present in `indigiti/wpncgx` at the start of the audit.

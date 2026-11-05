@@ -55,3 +55,7 @@ Enable LiteSpeed Serve Stale in the server/LSCache configuration appropriate to 
 ## PM Worker Guard (included automatically)
 
 No extra plugin or MU file is necessary. Open **Tools → PM Worker Guard** to see status and WP-CLI examples. Defaults cap Action Scheduler queue claims to 5 actions/batch and one concurrent batch; sitemap pages to Rank Math 200 and Yoast 250. These limits do not directly control PHP-FPM workers. Do **not** disable async Action Scheduler requests until you have verified the server-side `wp action-scheduler run` command and cron schedule. See [WORKER-GUARD.md](WORKER-GUARD.md).
+
+## Production evidence (v1.0.5)
+
+Before enabling origin enforcement, read [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md). Run **Settings → News Cache Guard → Test Atomic Object Cache** to check a short-lived object-cache key. On staging, use `bash tools/cache-probe.sh 'https://stage.example.com/article/' 'https://stage.example.com/?s=test'` and the optional k6 test. The deprecated Force Cache policy has been removed for privacy.

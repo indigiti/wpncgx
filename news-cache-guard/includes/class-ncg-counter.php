@@ -19,11 +19,9 @@ final class Counter {
         $key = self::key('cnt', $name, $identity, (string)$bucket);
         if (wp_cache_add($key, 1, self::GROUP, $window + 5)) return 1;
         $n = wp_cache_incr($key, 1, self::GROUP);
-        if ($n === false) {
-            $n = (int)wp_cache_get($key, self::GROUP) + 1;
-            wp_cache_set($key, $n, self::GROUP, $window + 5);
-        }
-        return (int)$n;
+        // Do not replace failed atomic increments with non-atomic get/set:
+        // simultaneous PHP workers could overwrite each other's counts.
+        return $n === false ? 0 : (int)$n;
     }
 
     public static function increment_unique(string $name, string $identity, string $value, int $window): int {
@@ -34,7 +32,7 @@ final class Counter {
         if (wp_cache_add($marker, 1, self::GROUP, $window + 5)) {
             if (wp_cache_add($countKey, 1, self::GROUP, $window + 5)) return 1;
             $n = wp_cache_incr($countKey, 1, self::GROUP);
-            return $n === false ? 1 : (int)$n;
+            return $n === false ? 0 : (int)$n;
         }
         $n = wp_cache_get($countKey, self::GROUP);
         return $n === false ? 0 : (int)$n;
@@ -67,6 +65,24 @@ final class Counter {
         if (!self::available()) return 0;
         $v = wp_cache_get(self::key('stat', $name, gmdate('Ymd')), self::GROUP);
         return $v === false ? 0 : (int)$v;
+    }
+
+    /** Manual, read-only-to-site diagnostic. Writes only short-lived object-cache keys. */
+    public static function atomic_probe(): array {
+        if (!self::available()) return ['ok' => false, 'reason' => 'No persistent object cache configured'];
+        try {
+            $key = 'probe:' . bin2hex(random_bytes(12));
+            $created = wp_cache_add($key, 1, self::GROUP, 15);
+            $next = $created ? wp_cache_incr($key, 1, self::GROUP) : false;
+            $value = $created ? wp_cache_get($key, self::GROUP) : false;
+            if ($created) wp_cache_delete($key, self::GROUP);
+            if (!$created || $next !== 2 || (int)$value !== 2) {
+                return ['ok' => false, 'reason' => 'Atomic add/incr/read failed'];
+            }
+            return ['ok' => true, 'reason' => 'Atomic add/incr/read passed on this request'];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'reason' => 'Object-cache operation failed'];
+        }
     }
 
     private static function key(string ...$parts): string {

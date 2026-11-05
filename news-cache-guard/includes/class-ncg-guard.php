@@ -41,8 +41,7 @@ final class Guard {
         // cache hits never reach PHP.
         if ($this->is_frontend_candidate() && $this->is_search_uri($path)
             && !defined('NCG_MU_SEARCH_GUARD_HANDLED')) {
-            $this->init_identity();
-            if (!$this->is_allowed()) {
+            if ($this->init_identity() && !$this->is_allowed()) {
                 $this->earlySearchChecked = true;
                 $count = Counter::increment('search', $this->identity, (int)Settings::get('search_window', 60));
                 if ($count > (int)Settings::get('search_limit', 10)) {
@@ -66,7 +65,11 @@ final class Guard {
 
     public function frontend_guard(): void {
         if (!$this->enabled() || !$this->is_frontend_candidate()) return;
-        $this->init_identity();
+        if (!$this->init_identity()) {
+            // Preserve no-cache instructions even when rate limiting fails open.
+            if (is_search() || is_404()) LiteSpeed::no_cache();
+            return;
+        }
         if ($this->is_denied()) { $this->block_or_dry('denylist'); if ($this->wouldBlock) return; }
         if ($this->is_allowed()) {
             // Allowlisting bypasses rate limits, not WordPress privacy rules.
@@ -76,6 +79,7 @@ final class Guard {
 
         $rule = $this->matched_rule();
         $this->policy = $rule['policy'] ?? (string)Settings::get('default_policy', 'safe_shared');
+        if ($this->policy === 'force_cache') $this->policy = 'safe_shared';
 
         if (is_search()) {
             LiteSpeed::no_cache();
@@ -96,9 +100,8 @@ final class Guard {
 
         if (!$this->is_safe_public_request()) return;
 
-        // Safe Shared / Cache Only respect LSCWP's native cache eligibility.
-        // Only explicit Force Cache opts into bypassing its exclusions.
-        if ($this->policy === 'force_cache') LiteSpeed::force_public_cache();
+        // Preserve LSCWP's native cache exclusions. Forcing public caching
+        // at PHP level can leak dynamically personalized responses.
 
         Counter::stat('origin_requests');
         $window = (int)($rule['window'] ?? Settings::get('origin_window', 60));
@@ -106,7 +109,7 @@ final class Guard {
         if ((int)Settings::get('emergency_mode', 0) === 1) $threshold = max(1, (int)floor($threshold / 2));
         $originCount = Counter::increment('origin', $this->identity, $window);
 
-        if ($this->policy === 'monitor' || $this->policy === 'force_cache' || !Counter::available()) return;
+        if ($this->policy === 'monitor' || !Counter::available()) return;
 
         $postId = is_singular() ? (int)get_queried_object_id() : 0;
         if ($postId > 0 && Counter::has_flag('regen_post_' . $postId, 'global')) {
@@ -141,8 +144,8 @@ final class Guard {
     public function rest_guard($result, \WP_REST_Server $server, \WP_REST_Request $request) {
         if (!$this->enabled() || is_user_logged_in() || $this->restChecked) return $result;
         $this->restChecked = true;
-        $this->init_identity();
         LiteSpeed::no_cache();
+        if (!$this->init_identity()) return $result;
         if ($this->is_allowed()) return $result;
         if (!Counter::available()) return $result;
         $count = Counter::increment('rest', $this->identity, (int)Settings::get('rest_window', 60));
@@ -165,7 +168,7 @@ final class Guard {
 
     public function xmlrpc_call_guard(string $method): void {
         if (!$this->enabled() || (string)Settings::get('xmlrpc_mode', 'rate_limit') !== 'rate_limit') return;
-        $this->init_identity();
+        if (!$this->init_identity()) return;
         if ($this->is_allowed() || !Counter::available()) return;
         $count = Counter::increment('xmlrpc', $this->identity, 60);
         if ($count > (int)Settings::get('xmlrpc_limit', 10)) $this->block_or_dry('xmlrpc-rate');
@@ -175,10 +178,13 @@ final class Guard {
         return (int)Settings::get('enabled', 1) === 1;
     }
 
-    private function init_identity(): void {
-        if ($this->identity !== '') return;
-        $this->clientIp = IP::client_ip();
-        $this->identity = IP::bucket($this->clientIp);
+    private function init_identity(): bool {
+        if ($this->identity !== '') return true;
+        $ip = IP::client_ip();
+        if ($ip === null) return false;
+        $this->clientIp = $ip;
+        $this->identity = IP::bucket($ip);
+        return true;
     }
 
     private function is_search_uri(string $path): bool {
@@ -252,7 +258,7 @@ final class Guard {
             $prefix = strpos($cidr, '/') !== false ? (int)substr(strrchr($cidr, '/'), 1) : (strpos($cidr, ':') !== false ? 128 : 32);
             if ($prefix < $bestPrefix) continue;
             $policy = $parts[1] ?? '';
-            if (!in_array($policy, ['monitor','force_cache','safe_shared','cache_only'], true)) $policy = (string)Settings::get('default_policy', 'safe_shared');
+            if (!in_array($policy, ['monitor','safe_shared','cache_only'], true)) $policy = (string)Settings::get('default_policy', 'safe_shared');
             $best = [
                 'cidr' => $cidr,
                 'policy' => $policy,

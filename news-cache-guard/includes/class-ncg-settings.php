@@ -57,6 +57,9 @@ final class Settings {
         $saved = get_option(self::OPTION, []);
         if (!is_array($saved)) $saved = [];
         $all = array_merge(self::defaults(), $saved);
+        // Retire unsafe Force Cache even if a site previously saved it.
+        // Never override LiteSpeed Cache exclusions for personalized output.
+        if ($all['default_policy'] === 'force_cache') $all['default_policy'] = 'safe_shared';
         // Strict fallback cap, including sites with an older saved value of 10.
         $all['search_limit'] = 3;
         $all['search_window'] = 60;
@@ -99,7 +102,7 @@ final class Settings {
         $out['ipv4_prefix'] = max(8, min(32, (int)($in['ipv4_prefix'] ?? $d['ipv4_prefix'])));
         $out['ipv6_prefix'] = max(32, min(128, (int)($in['ipv6_prefix'] ?? $d['ipv6_prefix'])));
 
-        $out['default_policy'] = in_array(($in['default_policy'] ?? ''), ['monitor','force_cache','safe_shared','cache_only'], true)
+        $out['default_policy'] = in_array(($in['default_policy'] ?? ''), ['monitor','safe_shared','cache_only'], true)
             ? $in['default_policy'] : $d['default_policy'];
         $out['excess_action'] = in_array(($in['excess_action'] ?? ''), ['429','403'], true)
             ? $in['excess_action'] : $d['excess_action'];

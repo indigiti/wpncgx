@@ -1,6 +1,6 @@
 # News Cache Guard for LiteSpeed
 
-Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.4 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
+Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.5 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
 
 ## Install
 
@@ -12,7 +12,7 @@ This package includes the standalone `mu-plugins/wp-search-guard.php`. Copy that
 
 ## Operational caveats
 
-The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests that never reach PHP. It uses the persistent WordPress object cache for counters; `wp_using_ext_object_cache()` alone is not a service-health check. The LiteSpeed Force Cache policy may bypass cache exclusions; keep Safe Shared Cache unless custom rendering and cookies have been audited.
+The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests that never reach PHP. It uses the persistent WordPress object cache for counters; `wp_using_ext_object_cache()` alone is not a service-health check. Force Cache has been retired for privacy; Safe Shared Cache respects LiteSpeed exclusions.
 
 ## Validation
 
@@ -23,3 +23,7 @@ License: GPL-2.0-or-later.
 ## PM Worker Guard
 
 Built-in queue and SEO sitemap workload caps are active with the regular plugin. View **Tools → PM Worker Guard** and see [WORKER-GUARD.md](WORKER-GUARD.md). Do not activate the previous standalone PM Worker Guard simultaneously.
+
+## Performance hardening v1.0.5
+
+See [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md) for Cloudflare Free edge rules, cache-header probes, bounded staging load tests and the deployment acceptance checklist. Force Public Cache is retired; legacy policy values normalize to Safe Shared Cache. Atomic counters fail open when Redis increment fails; missing Cloudflare visitor IP also fails open to avoid blocking shared proxy traffic.

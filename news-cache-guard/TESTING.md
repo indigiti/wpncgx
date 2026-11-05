@@ -75,3 +75,7 @@ Local logic checks: `php tests/mu-search-guard.php`.
 ## PM Worker Guard regression tests
 
 Run `php news-cache-guard/tests/worker-guard.php` and `php news-cache-guard/tests/worker-guard.php phase2`. Verify the plugin registered Action Scheduler, Yoast, and Rank Math filters, that smaller existing values survive caps, the sitemap option remains unchanged on WordPress admin pages, and the async shutdown filter registers only in phase 2. Test against real WordPress/SEO plugins and confirm pending actions remain stable after rollout.
+
+## Staging cache and load probes (v1.0.5)
+
+See [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md). `bash tools/cache-probe.sh` checks a low number of anonymous requests and interprets Cloudflare/LiteSpeed/QUIC.cloud headers; it **cannot** prove an origin HIT if Cloudflare terminates the request. `tools/staging-load.js` requires k6, an explicit approval variable and a staging hostname. CI validates unit logic and shell syntax, not live HTTP/Redis/PHP-FPM behavior.

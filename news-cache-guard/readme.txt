@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 
 Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
@@ -46,7 +46,7 @@ Example:
 
 Policy values:
 monitor
-force_cache
+force_cache (legacy only; normalized to safe_shared)
 safe_shared
 cache_only
 
@@ -60,7 +60,7 @@ More-specific CIDRs win.
 
 == Changelog ==
 
-= 1.0.4 =
+= 1.0.5 =
 * Integrate PM Worker Guard (Action Scheduler 5/batch, 1 concurrent batch, Rank Math 200 and Yoast 250 sitemap entries).
 * Optional async runner shutdown only after WP-CLI cron verification; preserves existing more restrictive settings.
 
@@ -82,3 +82,6 @@ More-specific CIDRs win.
 = 1.0.0 =
 * Initial production-oriented architecture.
 
+
+== Performance hardening 1.0.5 ==
+Removed unsafe forced-public-cache policy, failed open safely for invalid trusted-proxy headers and failed atomic Redis counters. Added manual atomic object cache test and staging-only cache/load probe scripts. See PRODUCTION-READINESS.md.

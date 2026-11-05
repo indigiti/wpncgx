@@ -7,11 +7,20 @@ namespace NCG;
 if (!defined('ABSPATH')) exit;
 
 final class IP {
-    public static function client_ip(): string {
-        $remote = self::valid_ip((string)($_SERVER['REMOTE_ADDR'] ?? '')) ?: '0.0.0.0';
+    public static function client_ip(): ?string {
+        $remote = self::valid_ip((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+        if ($remote === null) return null;
+        // WordPress behind a private loopback/Cloudways reverse proxy cannot
+        // safely treat REMOTE_ADDR as a per-reader identity. A forwarded header
+        // is not trustworthy until the actual proxy hop is explicitly verified.
+        if (self::in_any_cidr($remote, [
+            '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16',
+            '169.254.0.0/16', '::1/128', 'fc00::/7', 'fe80::/10',
+        ])) return null;
         if ((int)Settings::get('trust_cloudflare', 1) === 1 && self::in_any_cidr($remote, Settings::lines('trusted_proxy_cidrs'))) {
-            $cf = self::valid_ip((string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
-            if ($cf !== null) return $cf;
+            // Never group all visitors behind a shared Cloudflare edge IP.
+            // A missing or malformed CF-Connecting-IP must fail open.
+            return self::valid_ip((string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
         }
         return $remote;
     }

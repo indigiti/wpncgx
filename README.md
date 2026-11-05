@@ -1,6 +1,6 @@
 # News Cache Guard for LiteSpeed
 
-Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. The installable plugin lives in [`news-cache-guard/`](news-cache-guard/). Version 1.0.4 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
+Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. The installable plugin lives in [`news-cache-guard/`](news-cache-guard/). Version 1.0.5 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
 
 ## Install
 
@@ -16,10 +16,14 @@ News Cache Guard now includes PM Worker Guard: Action Scheduler queue claims (de
 
 ## Operational caveats
 
-The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests that never reach PHP. It uses the persistent WordPress object cache for counters; `wp_using_ext_object_cache()` alone is not a service-health check. The LiteSpeed Force Cache policy may bypass cache exclusions; keep Safe Shared Cache unless custom rendering and cookies have been audited.
+The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests that never reach PHP. It uses the persistent WordPress object cache for counters; `wp_using_ext_object_cache()` alone is not a service-health check. Force Cache has been retired for privacy; Safe Shared Cache respects LiteSpeed exclusions.
 
 ## Validation
 
 Run `php news-cache-guard/tests/regression.php` and `php news-cache-guard/tests/mu-search-guard.php`, and `php news-cache-guard/tests/worker-guard.php` for self-contained logic checks and `find news-cache-guard -name '*.php' -print0 | xargs -0 -n 1 php -l` for syntax validation. These do not replace integration testing with WordPress + LiteSpeed + Redis on a staging deployment.
 
 License: GPL-2.0-or-later.
+
+## Production hardening release 1.0.5
+
+[Production readiness checklist](news-cache-guard/PRODUCTION-READINESS.md) and safe staging scripts `news-cache-guard/tools/cache-probe.sh`, `news-cache-guard/tools/staging-load.js` are now included. No Cloudflare or Cloudways live configuration was modified. Force Cache was retired for privacy and object-cache/proxy failures fail open without blocking shared readers.

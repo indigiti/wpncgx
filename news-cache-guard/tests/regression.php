@@ -5,6 +5,7 @@ define('ABSPATH', __DIR__ . '/');
 $GLOBALS['ncg_config'] = [];
 $GLOBALS['ncg_cache'] = [];
 $GLOBALS['ncg_actions'] = [];
+$GLOBALS['ncg_atomic_fail'] = false;
 $GLOBALS['ncg_post'] = new WP_Post('publish');
 
 class WP_Post {
@@ -24,7 +25,7 @@ function wp_cache_add($key, $value, $group, $ttl) {
     return true;
 }
 function wp_cache_incr($key, $by, $group) {
-    if (!isset($GLOBALS['ncg_cache'][$group][$key])) return false;
+    if ($GLOBALS['ncg_atomic_fail'] || !isset($GLOBALS['ncg_cache'][$group][$key])) return false;
     return $GLOBALS['ncg_cache'][$group][$key] += $by;
 }
 function wp_cache_set($key, $val, $group, $ttl) { $GLOBALS['ncg_cache'][$group][$key] = $val; return true; }
@@ -84,7 +85,9 @@ check(!\NCG\Htaccess::matches_drop_key('preview'), 'Preview key is protected');
 config(['default_policy' => 'force_cache']);
 reset_actions();
 (new \NCG\Guard())->frontend_guard();
-check(in_array('litespeed_control_force_public', $GLOBALS['ncg_actions'], true), 'Explicit force-cache on safe public response');
+check(!in_array('litespeed_control_force_public', $GLOBALS['ncg_actions'], true), 'Unsafe Force Cache policy cannot override LiteSpeed exclusions');
+check(\NCG\Settings::get('default_policy') === 'safe_shared', 'Legacy Force Cache policy normalizes to Safe Shared Cache');
+check(\NCG\Settings::sanitize(['default_policy' => 'force_cache'])['default_policy'] === 'safe_shared', 'New unsafe Force Cache settings are rejected');
 
 $_GET = ['special_offer' => 'private'];
 reset_actions();
@@ -106,6 +109,49 @@ config(['default_policy' => 'safe_shared']);
 reset_actions();
 (new \NCG\Guard())->frontend_guard();
 check(!in_array('litespeed_control_set_cacheable', $GLOBALS['ncg_actions'], true), 'Safe Shared Cache defers to LSCWP eligibility');
+
+// Unavailable proxy identity must fail open rather than grouping all visitors behind one edge.
+config(['trust_cloudflare' => 1]);
+$_SERVER['REMOTE_ADDR'] = '173.245.48.100';
+unset($_SERVER['HTTP_CF_CONNECTING_IP']);
+check(\NCG\IP::client_ip() === null, 'Cloudflare edge missing visitor header is untrusted');
+$_SERVER['HTTP_CF_CONNECTING_IP'] = 'not-an-ip';
+check(\NCG\IP::client_ip() === null, 'Cloudflare edge invalid visitor header is untrusted');
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '2001:db8::12';
+check(\NCG\IP::client_ip() === '2001:db8::12', 'Cloudflare visitor IP accepted only for trusted edge');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.21';
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '8.8.8.8';
+check(\NCG\IP::client_ip() === '203.0.113.21', 'Untrusted peer cannot spoof a Cloudflare visitor IP');
+unset($_SERVER['HTTP_CF_CONNECTING_IP']);
+$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+check(\NCG\IP::client_ip() === null, 'Local reverse proxy cannot become one shared visitor identity');
+$_SERVER['REMOTE_ADDR'] = '10.0.0.4';
+check(\NCG\IP::client_ip() === null, 'Private Cloudways hop does not become the visitor identity');
+$_SERVER['REMOTE_ADDR'] = 'invalid-ip';
+check(\NCG\IP::client_ip() === null, 'Invalid REMOTE_ADDR fails open');
+$_SERVER['REMOTE_ADDR'] = '173.245.48.100';
+$_SERVER['REQUEST_URI'] = '/?s=word';
+$_GET = ['s' => 'word'];
+$before = \NCG\Counter::stat_value('would_block');
+for ($i = 0; $i < 6; $i++) (new \NCG\Guard())->early_scanner_guard();
+check(\NCG\Counter::stat_value('would_block') === $before, 'Unknown proxy identity does not block all Cloudflare traffic');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.21';
+$_GET = [];
+$_SERVER['REQUEST_URI'] = '/article/';
+
+// Atomic counter failures must not trigger non-atomic read/write increments.
+$GLOBALS['ncg_cache'] = [];
+check(\NCG\Counter::increment('atomic', 'visitor', 60) === 1, 'Atomic counter add');
+$GLOBALS['ncg_atomic_fail'] = true;
+check(\NCG\Counter::increment('atomic', 'visitor', 60) === 0, 'Atomic counter fails open on failed increment');
+$GLOBALS['ncg_atomic_fail'] = false;
+check(\NCG\Counter::increment('atomic', 'visitor', 60) === 2, 'Failed increment did not mutate the counter');
+$check = \NCG\Counter::atomic_probe();
+check($check['ok'], 'On-demand cache atomic probe passes for normal backend');
+$GLOBALS['ncg_atomic_fail'] = true;
+check(!\NCG\Counter::atomic_probe()['ok'], 'On-demand cache atomic probe detects failed increment');
+$GLOBALS['ncg_atomic_fail'] = false;
+$GLOBALS['ncg_cache'] = [];
 
 config(['search_limit'=>999,'dry_run'=>1]);
 check(\NCG\Settings::get('search_limit') === 3, 'Saved search rate limit cannot exceed 3');

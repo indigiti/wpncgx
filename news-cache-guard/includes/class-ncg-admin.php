@@ -11,6 +11,7 @@ final class Admin {
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_init', [$this, 'register']);
         add_action('admin_post_ncg_sync_htaccess', [$this, 'sync_htaccess']);
+        add_action('admin_post_ncg_cache_probe', [$this, 'cache_probe']);
     }
 
     public function menu(): void {
@@ -39,6 +40,15 @@ final class Admin {
         exit;
     }
 
+    public function cache_probe(): void {
+        if (!current_user_can('manage_options')) wp_die('Forbidden');
+        check_admin_referer('ncg_cache_probe');
+        $result = Counter::atomic_probe();
+        $url = add_query_arg(['page' => 'news-cache-guard', 'ncg_cache_probe' => $result['ok'] ? 'passed' : 'failed'], admin_url('options-general.php'));
+        wp_safe_redirect($url);
+        exit;
+    }
+
     public function render(): void {
         if (!current_user_can('manage_options')) return;
         $s = Settings::get_all();
@@ -47,20 +57,27 @@ final class Admin {
         $redis = Counter::available();
         $muSearch = defined('NCG_MU_SEARCH_GUARD_LOADED');
         $rules = Htaccess::rules();
+        $proxyIpValid = IP::client_ip() !== null;
+        $probe = isset($_GET['ncg_cache_probe']) ? sanitize_key(wp_unslash($_GET['ncg_cache_probe'])) : '';
         ?>
         <div class="wrap">
             <h1>News Cache Guard for LiteSpeed <small style="font-size:13px">v<?php echo esc_html(NCG_VERSION); ?></small></h1>
             <?php if ($notice): ?><div class="notice notice-info"><p><?php echo esc_html($notice); ?></p></div><?php endif; ?>
+            <?php if (get_option(Settings::OPTION, []) && is_array(get_option(Settings::OPTION, [])) && (get_option(Settings::OPTION, [])['default_policy'] ?? '') === 'force_cache'): ?><div class="notice notice-warning"><p><strong>Safety upgrade:</strong> a previously saved Force Cache policy has been converted to Safe Shared Cache at runtime. Public cache exclusions are never overridden.</p></div><?php endif; ?>
+            <?php if (!$proxyIpValid): ?><div class="notice notice-warning"><p><strong>Visitor identity unavailable:</strong> REMOTE_ADDR is invalid or a trusted Cloudflare proxy did not provide a valid CF-Connecting-IP. IP-based limits fail open to avoid blocking everyone behind one proxy.</p></div><?php endif; ?>
+            <?php if ($probe === 'passed'): ?><div class="notice notice-success"><p>Object cache atomic add/increment/read check passed for this request. This does not certify cross-worker Redis reliability.</p></div><?php endif; ?>
+            <?php if ($probe === 'failed'): ?><div class="notice notice-error"><p>Object cache atomic check failed. Do not enable strict origin limits until the Redis/object-cache backend is healthy.</p></div><?php endif; ?>
             <?php if (!$redis): ?><div class="notice notice-warning"><p><strong>Fail-open:</strong> no persistent object cache was detected. Rate limits are disabled so the plugin cannot block traffic due to missing Redis/object cache.</p></div><?php endif; ?>
             <?php if (!$muSearch): ?><div class="notice notice-warning"><p><strong>Search Guard MU not installed:</strong> the 3-search fallback obeys this plugin's Dry Run switch. For strict early enforcement independent of Dry Run, copy <code>news-cache-guard/mu-plugins/wp-search-guard.php</code> to <code>wp-content/mu-plugins/wp-search-guard.php</code>.</p></div><?php endif; ?>
             <?php if ($muSearch && $s['dry_run']): ?><div class="notice notice-info"><p><strong>Search Guard MU is active:</strong> its 3-per-60-second limit enforces even while News Cache Guard Dry Run is on. All other limits continue to follow Dry Run.</p></div><?php endif; ?>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;max-width:1000px;margin:16px 0">
                 <?php $cards = [
                     ['LiteSpeed Cache', $ls ? 'DETECTED' : 'CHECK SERVER'],
-                    ['Persistent Object Cache', $redis ? 'ENABLED' : 'FAIL-OPEN'],
+                    ['Persistent Object Cache', $redis ? 'CONFIGURED (NOT HEALTH TESTED)' : 'FAIL-OPEN'],
                     ['Protection', !$s['enabled'] ? 'DISABLED' : ($s['dry_run'] ? 'DRY RUN' : 'ENFORCING')],
                     ['Default Policy', strtoupper(str_replace('_',' ',(string)$s['default_policy']))],
                     ['IPv6 Bucket', '/'.(int)$s['ipv6_prefix']],
+                    ['Client IP confidence', $proxyIpValid ? 'RESOLVED' : 'UNKNOWN / FAIL-OPEN'],
                     ['Query Collapse', $s['query_collapse'] ? 'ON' : 'OFF'],
                     ['Search Guard (3/60s)', $muSearch ? 'MU ACTIVE' : 'FALLBACK'],
                     ['PM Worker Guard', 'ACTIVE (5 / 1 DEFAULT)'],
@@ -90,7 +107,7 @@ final class Admin {
                     <?php $this->checkbox('dry_run','Dry Run (record decisions but do not rate-limit)',$s); ?>
                     <?php $this->checkbox('emergency_mode','Emergency mode (halves origin threshold)',$s); ?>
                     <tr><th>Default policy</th><td><select name="<?php echo esc_attr(Settings::OPTION); ?>[default_policy]">
-                        <?php foreach (['monitor'=>'Monitor Only','force_cache'=>'Force Cache','safe_shared'=>'Safe Shared Cache','cache_only'=>'Cache-Only / MISS Limit'] as $k=>$v): ?>
+                        <?php foreach (['monitor'=>'Monitor Only','safe_shared'=>'Safe Shared Cache','cache_only'=>'Cache-Only / PHP-Origin Limit'] as $k=>$v): ?>
                             <option value="<?php echo esc_attr($k); ?>" <?php selected($s['default_policy'],$k); ?>><?php echo esc_html($v); ?></option>
                         <?php endforeach; ?></select></td></tr>
                     <?php $this->number('origin_threshold','Origin threshold',$s,1,10000,'Requests reaching PHP within the origin window before protected mode. Cached LSCache hits never execute this plugin.'); ?>
@@ -137,7 +154,7 @@ final class Admin {
                     <?php $this->checkbox('purge_categories','Purge affected categories',$s); ?>
                     <?php $this->checkbox('purge_feeds','Purge main feed',$s); ?>
                     <?php $this->checkbox('purge_sitemap','Purge common sitemap URLs',$s); ?>
-                    <?php $this->number('force_public_ttl','Force-cache TTL (seconds)',$s,30,86400); ?>
+                    <tr><th>Force Public Cache</th><td><strong>Disabled for safety</strong><p class="description">The plugin no longer overrides LiteSpeed's native eligibility rules. Legacy Force Cache values are treated as Safe Shared Cache.</p></td></tr>
                     <?php $this->checkbox('debug_headers','Emit X-NCG-* diagnostic headers',$s); ?>
                 </table>
                 <?php submit_button('Save Settings'); ?>
@@ -151,6 +168,13 @@ final class Admin {
                 <?php submit_button('Sync .htaccess Now','secondary','submit',false); ?>
             </form>
 
+            <h2>Manual object-cache diagnostic</h2>
+            <p>Run an atomic add/increment/read check with a temporary object-cache key (15-second TTL). Does not verify server connectivity during bursts or measure page-cache HIT ratios.</p>
+            <form action="<?php echo esc_url(admin_url('admin-post.php')); ?>" method="post">
+                <input type="hidden" name="action" value="ncg_cache_probe">
+                <?php wp_nonce_field('ncg_cache_probe'); ?>
+                <?php submit_button('Test Atomic Object Cache', 'secondary', 'submit', false); ?>
+            </form>
             <h2>Diagnostic testers</h2>
             <?php $this->diagnostics(); ?>
         </div>

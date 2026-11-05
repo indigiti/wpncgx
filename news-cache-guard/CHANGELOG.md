@@ -1,3 +1,14 @@
+# Change history
+
+## v1.0.5 — production hardening / staging evidence (2026-11-05)
+
+- Retired Force Public Cache to avoid bypassing LSCache privacy exclusions. Existing stored and CIDR policies normalize to Safe Shared Cache; no WordPress database migration required.
+- Fail open on missing/invalid visitor identity behind trusted Cloudflare proxies, rather than combining unrelated users under a Cloudflare edge IP.
+- Removed non-atomic object-cache read/write fallback in request counters. When Redis increment fails, a request is allowed rather than making unreliable protection decisions.
+- Added manually triggered atomic object-cache diagnostic to the Settings dashboard; do not confuse this with a continuous Redis health monitor.
+- Added low-impact cache-header probe, staging-only load-check script, Cloudflare Free bot-protection guidance and deployment acceptance checklist.
+- Added regression tests for proxy, Redis-failure, and cache privacy scenarios.
+
 # Changelog
 
 ## 1.0.4 — 2026-11-05

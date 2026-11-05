@@ -1,5 +1,13 @@
 # Change history
 
+## v1.0.6 — optional request-side no-cache reuse (2026-11-05)
+
+- Address the original aggressive-crawler use case without restoring response-side `force_public`: add an **OFF-by-default** advanced setting for LiteSpeed `CacheIgnoreCacheControl On` in the managed `.htaccess` marker.
+- Keep Safe Shared Cache and normal privacy/cookie/non-cache exclusions. Client no-cache directives and response public/private cacheability are different layers; this setting affects all eligible requests, not just bots.
+- Extend read-only cache probes with an anonymous `Cache-Control: no-cache`/`Pragma: no-cache` request and add explicit staging acceptance / rollback guidance.
+- Test generated rules, independent query-collapse behavior and safe defaults.
+
+
 ## v1.0.5 — production hardening / staging evidence (2026-11-05)
 
 - Retired Force Public Cache to avoid bypassing LSCache privacy exclusions. Existing stored and CIDR policies normalize to Safe Shared Cache; no WordPress database migration required.

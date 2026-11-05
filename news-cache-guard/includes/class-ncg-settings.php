@@ -33,6 +33,8 @@ final class Settings {
             'excess_action' => '429',
             'retry_after' => 60,
             'query_collapse' => 1,
+            // Explicit opt-in: ignore client no-cache on cache lookup; does NOT override server response exclusions.
+            'ignore_request_no_cache' => 0,
             'drop_query_keys' => "utm*\ngclid\ngbraid\nwbraid\ngad_source\nfbclid\nmsclkid\n_ga\nlmid",
             'protected_query_keys' => "preview\npreview_id\npreview_nonce\naction\nnonce\n_wpnonce\nLSCWP_CTRL\ns\nrest_route",
             'scanner_action' => '404',
@@ -75,7 +77,7 @@ final class Settings {
         $d = self::defaults();
         $out = [];
         $bools = [
-            'enabled','dry_run','emergency_mode','query_collapse','trust_cloudflare',
+            'enabled','dry_run','emergency_mode','query_collapse','ignore_request_no_cache','trust_cloudflare',
             'purge_home','purge_categories','purge_feeds','purge_sitemap','debug_headers'
         ];
         foreach ($bools as $k) $out[$k] = empty($in[$k]) ? 0 : 1;

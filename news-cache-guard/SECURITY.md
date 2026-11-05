@@ -28,3 +28,7 @@ This plugin is designed to protect origin resources, not to replace a WAF or DDo
 When a request appears to originate from a trusted Cloudflare proxy, `CF-Connecting-IP` must be a valid IP; otherwise NCG skips IP-based origin limits rather than grouping all readers into the proxy IP. This is a **fail-open** security tradeoff; block direct-to-origin access and fix the proxy chain. Do not trust unverified user-agent strings as a verified crawler signal. When an atomic object-cache increment fails, counters return `0` (unavailable) without non-atomic read/write fallback.
 
 Public Force Cache overrides have been removed. A cached response is still available to scrapers; use Cloudflare edge controls to mitigate abusive request volume.
+
+## v1.0.6 — request no-cache reuse safety
+
+The advanced `ignore_request_no_cache` setting writes LiteSpeed `CacheIgnoreCacheControl On` into the managed root `.htaccess` block. This can cause **all** clients in that directory, including ordinary readers and preview requests, to receive an existing eligible cache entry despite explicit `Cache-Control: no-cache`/`Pragma: no-cache` request headers. Do not turn it on before confirming normal response-side exclusions protect admin, preview, private, and authenticated content. It is not a bot detector and does not override `X-LiteSpeed-Cache-Control: no-cache` response policies. Its default remains OFF.

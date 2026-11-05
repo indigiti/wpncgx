@@ -82,6 +82,20 @@ check(\NCG\Htaccess::matches_drop_key('utm_source'), 'UTM query key matching');
 check(!\NCG\Htaccess::matches_drop_key('UTM_source'), 'LiteSpeed query key matching is case sensitive');
 check(!\NCG\Htaccess::matches_drop_key('preview'), 'Preview key is protected');
 
+// Request no-cache headers must never imply Force Public cache or response overrides.
+config(['query_collapse' => 0, 'ignore_request_no_cache' => 0]);
+check(\NCG\Htaccess::rules() === [], 'No rewrite rules when query collapse and client cache reuse are both off');
+config(['query_collapse' => 0, 'ignore_request_no_cache' => 1]);
+$revalidationRules = \NCG\Htaccess::rules();
+check(in_array('CacheIgnoreCacheControl On', $revalidationRules, true), 'Advanced opt-in enables LiteSpeed client no-cache reuse even without query collapse');
+check(!in_array('CacheEnable public /', $revalidationRules, true), 'Client no-cache reuse does not globally force public caching');
+config(['query_collapse' => 1, 'ignore_request_no_cache' => 1]);
+check(in_array('CacheKeyModify -qs:utm*', \NCG\Htaccess::rules(), true), 'Client no-cache reuse preserves query key normalization');
+config(['query_collapse' => 1, 'ignore_request_no_cache' => 0]);
+check(!in_array('CacheIgnoreCacheControl On', \NCG\Htaccess::rules(), true), 'Cache bypass request behavior remains default when opt-in is off');
+check(\NCG\Settings::sanitize(['ignore_request_no_cache' => '1'])['ignore_request_no_cache'] === 1, 'Validated admin opt-in saves setting');
+check(\NCG\Settings::sanitize([])['ignore_request_no_cache'] === 0, 'Opt-in is disabled when setting is omitted');
+
 config(['default_policy' => 'force_cache']);
 reset_actions();
 (new \NCG\Guard())->frontend_guard();

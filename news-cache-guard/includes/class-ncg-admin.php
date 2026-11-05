@@ -79,6 +79,7 @@ final class Admin {
                     ['IPv6 Bucket', '/'.(int)$s['ipv6_prefix']],
                     ['Client IP confidence', $proxyIpValid ? 'RESOLVED' : 'UNKNOWN / FAIL-OPEN'],
                     ['Query Collapse', $s['query_collapse'] ? 'ON' : 'OFF'],
+                    ['Client no-cache reuse', $s['ignore_request_no_cache'] ? 'OPT-IN / CHECK SERVER' : 'OFF'],
                     ['Search Guard (3/60s)', $muSearch ? 'MU ACTIVE' : 'FALLBACK'],
                     ['PM Worker Guard', 'ACTIVE (5 / 1 DEFAULT)'],
                 ]; foreach ($cards as [$a,$b]): ?>
@@ -133,12 +134,20 @@ final class Admin {
                     <?php $this->textarea('rules','CIDR policy rules',$s,'Format: CIDR|policy|threshold|window|duration|miss|unique|404. Example: 203.0.113.0/24|cache_only|5|60|300|2|3|2'); ?>
                 </table>
 
+                <h2>Bot fresh-request cache defense (advanced, request-side)</h2>
+                <p><strong>What this solves:</strong> bots and browsers sending <code>Cache-Control: no-cache</code> or <code>Pragma: no-cache</code> can cause repeated origin work despite an already populated LiteSpeed page cache. <code>CacheIgnoreCacheControl On</code> tells LiteSpeed to attempt to reuse an eligible cache entry anyway.</p>
+                <p><strong>Scope and risk:</strong> this affects cache lookups across this entire WordPress directory, <em>not only bots</em>. It does not force response caching and must never replace authenticated/private/no-store exclusions. A normal hard refresh may no longer bypass cache. Keep OFF until you verify staging privacy, editorial purges, and existing LiteSpeed HIT/MISS behavior. A WordPress plugin cannot determine verified bot status on a cache HIT.</p>
+                <table class="form-table">
+                    <?php $this->checkbox('ignore_request_no_cache','Ignore client no-cache request headers during LiteSpeed cache lookup (advanced opt-in)',$s); ?>
+                </table>
+                <?php if ($s['ignore_request_no_cache']): ?><div class="notice notice-warning inline"><p><strong>Advanced cache-reuse directive enabled in generated rules.</strong> Verify the root .htaccess was successfully synchronized and test the result. Cloudflare may still serve, bypass, or revalidate independently.</p></div><?php endif; ?>
+
                 <h2>LiteSpeed query collapse</h2>
                 <p>These rules alter only the LiteSpeed cache key. They do not redirect the browser or remove UTM values from the visible URL.</p>
                 <table class="form-table">
                     <?php $this->checkbox('query_collapse','Enable cache-key query collapse',$s); ?>
                     <?php $this->textarea('drop_query_keys','Ignored query keys',$s,'Supports exact names and LiteSpeed prefix wildcards such as utm*.'); ?>
-                    <?php $this->textarea('protected_query_keys','Protected query keys',$s,'Protected keys are never added to the drop list and make a request ineligible for forced shared caching.'); ?>
+                    <?php $this->textarea('protected_query_keys','Protected query keys',$s,'Protected keys are never removed from the cache key; they may identify content-changing requests.'); ?>
                 </table>
 
                 <h2>Scanner / XML-RPC</h2>
@@ -154,7 +163,7 @@ final class Admin {
                     <?php $this->checkbox('purge_categories','Purge affected categories',$s); ?>
                     <?php $this->checkbox('purge_feeds','Purge main feed',$s); ?>
                     <?php $this->checkbox('purge_sitemap','Purge common sitemap URLs',$s); ?>
-                    <tr><th>Force Public Cache</th><td><strong>Disabled for safety</strong><p class="description">The plugin no longer overrides LiteSpeed's native eligibility rules. Legacy Force Cache values are treated as Safe Shared Cache.</p></td></tr>
+                    <tr><th>Force Public Cache</th><td><strong>Retired; request-side cache reuse is available above.</strong><p class="description">The plugin does not override LiteSpeed's native public/private response eligibility rules. Legacy Force Cache values are treated as Safe Shared Cache.</p></td></tr>
                     <?php $this->checkbox('debug_headers','Emit X-NCG-* diagnostic headers',$s); ?>
                 </table>
                 <?php submit_button('Save Settings'); ?>

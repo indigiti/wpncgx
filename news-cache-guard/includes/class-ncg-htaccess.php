@@ -22,7 +22,7 @@ final class Htaccess {
         }
         $rules = self::rules();
         $ok = insert_with_markers($file, self::MARKER, $rules);
-        return ['ok' => (bool)$ok, 'message' => $ok ? 'LiteSpeed cache-key rules synchronized.' : 'Could not update .htaccess.'];
+        return ['ok' => (bool)$ok, 'message' => $ok ? 'LiteSpeed cache-key/request-lookup rules synchronized.' : 'Could not update .htaccess.'];
     }
 
     public static function remove(): void {
@@ -36,15 +36,24 @@ final class Htaccess {
     }
 
     public static function rules(): array {
-        if ((int)Settings::get('query_collapse', 1) !== 1) return [];
-        $keys = self::safe_drop_keys(Settings::lines('drop_query_keys'));
-        if (!$keys) return [];
-        $out = [
-            '<IfModule LiteSpeed>',
-            '# Cache-key-only query normalization. Browser URL and PHP query string remain unchanged.',
-        ];
-        foreach ($keys as $key) {
-            $out[] = 'CacheKeyModify -qs:' . $key;
+        $keys = (int)Settings::get('query_collapse', 1) === 1
+            ? self::safe_drop_keys(Settings::lines('drop_query_keys')) : [];
+        $reuse = (int)Settings::get('ignore_request_no_cache', 0) === 1;
+        if (!$keys && !$reuse) return [];
+        $out = ['<IfModule LiteSpeed>'];
+        if ($reuse) {
+            // Request-side lookup only: reuses an existing eligible cached response
+            // even if the client sends Cache-Control/Pragma: no-cache. It MUST NOT
+            // force responses into public cache or override LSCWP's privacy rules.
+            // Applies at the .htaccess directory scope; cannot identify bot identity.
+            $out[] = '# OPT-IN: re-use existing cache on client no-cache requests. Applies to all requests in this directory.';
+            $out[] = 'CacheIgnoreCacheControl On';
+        }
+        if ($keys) {
+            $out[] = '# Cache-key-only query normalization. Browser URL and PHP query string remain unchanged.';
+            foreach ($keys as $key) {
+                $out[] = 'CacheKeyModify -qs:' . $key;
+            }
         }
         $out[] = '</IfModule>';
         return $out;

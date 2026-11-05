@@ -1,6 +1,6 @@
 # News Cache Guard for LiteSpeed
 
-Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.5 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
+Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.6 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
 
 ## Install
 
@@ -12,7 +12,7 @@ This package includes the standalone `mu-plugins/wp-search-guard.php`. Copy that
 
 ## Operational caveats
 
-The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests that never reach PHP. It uses the persistent WordPress object cache for counters; `wp_using_ext_object_cache()` alone is not a service-health check. Force Cache has been retired for privacy; Safe Shared Cache respects LiteSpeed exclusions.
+The plugin runs after the LiteSpeed cache lookup and cannot rate-limit requests that never reach PHP. It uses the persistent WordPress object cache for counters; `wp_using_ext_object_cache()` alone is not a service-health check. Response-side Force Cache has been retired for privacy; Safe Shared Cache respects LiteSpeed exclusions. Request-side fresh-copy cache reuse is an explicit opt-in and is not the same as forcing a response into public cache.
 
 ## Validation
 
@@ -27,3 +27,7 @@ Built-in queue and SEO sitemap workload caps are active with the regular plugin.
 ## Performance hardening v1.0.5
 
 See [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md) for Cloudflare Free edge rules, cache-header probes, bounded staging load tests and the deployment acceptance checklist. Force Public Cache is retired; legacy policy values normalize to Safe Shared Cache. Atomic counters fail open when Redis increment fails; missing Cloudflare visitor IP also fails open to avoid blocking shared proxy traffic.
+
+## Fresh-request cache defense (optional)
+
+If bots repeatedly request `Cache-Control: no-cache`, the opt-in **Ignore client no-cache during LiteSpeed lookup** setting writes the LiteSpeed request-side `CacheIgnoreCacheControl On` directive. It is **OFF by default** and applies across the WordPress directory, not only to bots. It does not force public responses or bypass normal LSCWP privacy checks. Run the [fresh-request cache defense staging checklist](FRESH-CACHE-DEFENSE.md) before enabling.

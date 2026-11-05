@@ -47,3 +47,7 @@ We cannot verify production caching, crawler classification, Redis cross-worker 
 ## Rollback
 
 Reinstall the prior v1.0.4 plugin ZIP if needed; be aware it contains the removed Force Cache capability. Restore previous `ncg_settings` after verifying privacy. Do not use old Force Cache settings on personalized pages. The MU search file in `wp-content/mu-plugins/` is separate and must be removed/renamed independently for rollback.
+
+## v1.0.6: client-request cache bypass diagnostics
+
+If the origin shows repeated misses when crawlers send `Cache-Control: no-cache` or `Pragma: no-cache`, investigate the [opt-in fresh-request cache defense](FRESH-CACHE-DEFENSE.md). `CacheIgnoreCacheControl On` influences LiteSpeed lookup **before PHP runs** and may reuse an existing eligible public article response. Do not assume a response-side `force_public` hook solves request-side cache bypass. Verify auth/private/search exclusion, editorial purges, query key variation and the origin headers before activation.

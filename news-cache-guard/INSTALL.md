@@ -9,6 +9,10 @@
 - Persistent object cache, preferably Redis
 - Writable root `.htaccess` if you want the plugin to sync query-collapse rules automatically
 
+## Optional crawler fresh-copy cache reuse
+
+See [FRESH-CACHE-DEFENSE.md](FRESH-CACHE-DEFENSE.md). Keep the advanced **Ignore client no-cache during LiteSpeed cache lookup** option OFF until staging confirms previously cached public articles are repeatedly being bypassed by client request headers. This is a request-side LiteSpeed directive, not an override of response privacy rules. It affects every request in the WordPress directory and does not distinguish verified bots.
+
 ## Recommended rollout
 
 1. Back up the database and `.htaccess`.

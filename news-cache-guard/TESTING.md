@@ -79,3 +79,7 @@ Run `php news-cache-guard/tests/worker-guard.php` and `php news-cache-guard/test
 ## Staging cache and load probes (v1.0.5)
 
 See [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md). `bash tools/cache-probe.sh` checks a low number of anonymous requests and interprets Cloudflare/LiteSpeed/QUIC.cloud headers; it **cannot** prove an origin HIT if Cloudflare terminates the request. `tools/staging-load.js` requires k6, an explicit approval variable and a staging hostname. CI validates unit logic and shell syntax, not live HTTP/Redis/PHP-FPM behavior.
+
+## v1.0.6 client no-cache request probe
+
+Enable the advanced request-side cache reuse only after protecting private, authenticated, search and preview pages. See [FRESH-CACHE-DEFENSE.md](FRESH-CACHE-DEFENSE.md). The updated low-volume `tools/cache-probe.sh` makes an additional test request to a warmed public article with `Cache-Control: no-cache` and `Pragma: no-cache` and prints LiteSpeed, Cloudflare and QUIC.cloud cache headers. With Cloudflare HIT, it cannot prove an origin LiteSpeed HIT.

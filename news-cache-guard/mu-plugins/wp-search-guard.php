@@ -36,6 +36,18 @@ function is_search_route(array $query, string $requestUri): bool {
     return (bool)preg_match('~(?:^|/)search(?:/|$)~i', rawurldecode($path));
 }
 
+/** REST, login and infrastructure URLs are not ordinary front-end searches. */
+function is_non_frontend_route(array $query, string $requestUri): bool {
+    if (array_key_exists('rest_route', $query)) {
+        return true;
+    }
+    $path = (string)(parse_url($requestUri, PHP_URL_PATH) ?: '/');
+    return (bool)preg_match(
+        '~(?:^|/)(?:wp-admin|wp-json)(?:/|$)|(?:^|/)(?:wp-login\.php|xmlrpc\.php|wp-cron\.php|admin-ajax\.php)(?:/|$)~i',
+        rawurldecode($path)
+    );
+}
+
 /** No authentication/pluggable API calls: muplugins_loaded is too early for those. */
 function is_eligible_request(): bool {
     if (PHP_SAPI === 'cli' || (defined('WP_CLI') && WP_CLI) || is_admin()) {
@@ -50,7 +62,8 @@ function is_eligible_request(): bool {
     if ($method !== 'GET' && $method !== 'HEAD') {
         return false;
     }
-    return is_search_route($_GET, (string)($_SERVER['REQUEST_URI'] ?? '/'));
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+    return !is_non_frontend_route($_GET, $uri) && is_search_route($_GET, $uri);
 }
 
 /** Match an IP to a known trusted Cloudflare network; never trust unvalidated headers. */

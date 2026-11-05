@@ -33,6 +33,10 @@ check(isset($GLOBALS['mu_actions']['muplugins_loaded']), 'MU guard registered at
 check(\NCG\SearchMU\is_search_route($_GET, '/?s=test'), 'Query-string search detected');
 check(\NCG\SearchMU\is_search_route([], '/search/test/'), 'Pretty permalink search detected');
 check(!\NCG\SearchMU\is_search_route([], '/news/test/'), 'Ordinary article not treated as search');
+check(\NCG\SearchMU\is_non_frontend_route(['s'=>'foo'], '/wp-login.php?s=foo'), 'Login endpoint excluded from search limiting');
+check(\NCG\SearchMU\is_non_frontend_route(['s'=>'foo'], '/wp-json/wp/v2/search/?s=foo'), 'REST pretty route excluded from search limiting');
+check(\NCG\SearchMU\is_non_frontend_route(['s'=>'foo', 'rest_route'=>'/wp/v2/search'], '/?s=foo'), 'REST query route excluded from search limiting');
+check(!\NCG\SearchMU\is_non_frontend_route(['s'=>'foo'], '/?s=foo'), 'Ordinary search not excluded');
 $now = 1770000000;
 for ($n = 1; $n <= 3; $n++) {
     check(\NCG\SearchMU\evaluate($now)['status'] === 0, "Search {$n} accepted");

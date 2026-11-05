@@ -5,6 +5,7 @@
 - Add standalone MU Search Guard for front-end `?s=` and standard `/search/` URLs, with an enforced three-search limit per client IPv4/IPv6 /64 in fixed 60-second windows.
 - Use validated Cloudflare client IPs only through configured trusted proxy CIDRs; fail open without atomic persistent object cache, or when a trusted edge lacks a valid visitor IP.
 - Reject oversized/array search terms early; return `429` with a window-aware `Retry-After` and `Cache-Control: no-store`.
+- Exclude WordPress login, admin, REST, AJAX, XML-RPC and cron routes that incidentally carry search parameters.
 - Prevent double counting when the MU guard handles a request; lock the ordinary plugin fallback to 3/60 even for sites with legacy saved limits.
 - Show MU installation status in the admin dashboard and add Cloudways-oriented installation, limitations, rollback and regression guidance.
 

@@ -202,6 +202,11 @@ final class Guard {
 
     private function is_frontend_candidate(): bool {
         if (is_admin() || wp_doing_cron()) return false;
+        // Do not confuse REST, login or infrastructure routes with front-end
+        // searches merely because they include an `s` query parameter.
+        if (array_key_exists('rest_route', $_GET)) return false;
+        $path = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+        if (preg_match('~(?:^|/)(?:wp-admin|wp-json)(?:/|$)|(?:^|/)(?:wp-login\.php|xmlrpc\.php|wp-cron\.php|admin-ajax\.php)(?:/|$)~i', rawurldecode($path))) return false;
         if (defined('WP_CLI') && WP_CLI) return false;
         if (is_user_logged_in()) return false;
         $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));

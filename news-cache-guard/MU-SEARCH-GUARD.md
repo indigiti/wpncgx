@@ -16,7 +16,7 @@ MU plugins do not use activation hooks, do not appear among ordinary plugins, an
 
 ## Behavior
 
-- Handles front-end `GET`/`HEAD` with `?s=...` and standard pretty search paths `/search/`. It does not protect custom rewrite search slugs, AJAX/REST search APIs, or cached responses that bypass WordPress entirely.
+- Handles front-end `GET`/`HEAD` with `?s=...` and standard pretty search paths `/search/`, excluding WordPress REST, admin, login, XML-RPC, AJAX and cron routes. It does not protect custom rewrite search slugs, AJAX/REST search APIs, or cached responses that bypass WordPress entirely.
 - Counts **three searches per client IPv4 or IPv6 `/64` network in fixed wall-clock 60-second windows**. The fourth and subsequent requests receive HTTP 429. `Retry-After` is the remaining time to the next window. A fixed window can allow bursts of up to six at the minute boundary; it does **not** enforce a strict rolling 60-second cap.
 - Rejects `?s[]=...` and search strings longer than 160 bytes with HTTP 400.
 - Uses atomic WordPress object-cache `add` and `incr`, with a hashed identity and window key. If no persistent object cache is available, or the increment fails, **fails open** and allows the request. A reported external object cache is not proof of atomicity or availability under load.

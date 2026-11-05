@@ -1,0 +1,21 @@
+name: WordPress plugin PHP checks
+on:
+  push:
+  pull_request:
+jobs:
+  php-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP lint
+        run: find news-cache-guard -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+      - name: Logic regression tests
+        run: php news-cache-guard/tests/regression.php

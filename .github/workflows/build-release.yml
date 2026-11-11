@@ -56,6 +56,8 @@ jobs:
           php news-cache-guard/tests/dashboard.php
           php news-cache-guard/tests/performance.php
           php news-cache-guard/tests/counter-efficiency.php
+          php news-cache-guard/tests/guard-budget.php dry
+          php news-cache-guard/tests/guard-budget.php enforce
           php news-cache-guard/tests/branding.php
           php news-cache-guard/tests/github-updates.php
           php news-cache-guard/tests/media-policy.php

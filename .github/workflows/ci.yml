@@ -25,5 +25,6 @@ jobs:
           php news-cache-guard/tests/worker-guard.php phase2
           php news-cache-guard/tests/worker-guard.php forcecache
           php news-cache-guard/tests/performance.php
+          php news-cache-guard/tests/counter-efficiency.php
       - name: Cache probe shell syntax
         run: bash -n news-cache-guard/tools/cache-probe.sh

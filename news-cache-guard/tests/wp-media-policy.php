@@ -55,6 +55,33 @@ $large=wp_handle_sideload($largeFile, ['test_form'=>false]);
 if (file_exists($largeTmp)) @unlink($largeTmp);
 nrg_wp_policy_check(!empty($large['error']), 'Real WordPress upload blocks files over 500 KB');
 
+
+/* Change the active policy while WordPress is running. The next upload must
+ * use the saved settings immediately, without changing other module toggles. */
+update_option(\NCG\MediaPolicy::OPTION,['max_kb'=>2048,'types'=>['jpeg','webp','png','pdf']],false);
+nrg_wp_policy_check(\NCG\MediaPolicy::max_bytes()===2048*1024,
+    'Saved upload limit is used by subsequent requests');
+$pngAllowed=nrg_wp_sideload('newsroom-enabled.png',$png_base64);
+nrg_wp_policy_check(!isset($pngAllowed['error']) && ($pngAllowed['type']??'')==='image/png',
+    'PNG sideload succeeds when administrator enables it');
+$pdf='JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyA+PgplbmRvYmoKJSVFT0YK';
+$pdfAllowed=nrg_wp_sideload('epaper-edition.pdf',$pdf);
+nrg_wp_policy_check(!isset($pdfAllowed['error']) && ($pdfAllowed['type']??'')==='application/pdf',
+    'E-paper PDF sideload succeeds after opt-in');
+$oversizeValid=tempnam(sys_get_temp_dir(),'nrg-limit-');
+file_put_contents($oversizeValid,base64_decode($jpeg_base64).str_repeat(' ',600*1024));
+$f=['name'=>'newsroom-large-source.jpeg','type'=>'image/jpeg','tmp_name'=>$oversizeValid,
+    'size'=>filesize($oversizeValid),'error'=>0];
+$largeAllowed=wp_handle_sideload($f,['test_form'=>false]);
+if(file_exists($oversizeValid)) @unlink($oversizeValid);
+nrg_wp_policy_check(!isset($largeAllowed['error']),
+    'Valid 600KB image is accepted after raising configured upload limit to 2MB');
+update_option(\NCG\MediaPolicy::OPTION,['max_kb'=>500,'types'=>['jpeg','webp']],false);
+$pngDenied=nrg_wp_sideload('newsroom-disabled.png',$png_base64);
+nrg_wp_policy_check(!empty($pngDenied['error']), 'Turning PNG off applies immediately');
+nrg_wp_policy_check(\NCG\MediaPolicy::settings()['max_kb']===500,
+    'Original upload limit can be restored without toggling other modules');
+
 wp_set_current_user($editor->ID);
 $block=wp_insert_term('NCG Editor Cannot Create '.wp_generate_password(6,false),'category');
 nrg_wp_policy_check(is_wp_error($block) && $block->get_error_code()==='nrg_category_creation_blocked',

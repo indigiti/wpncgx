@@ -187,3 +187,35 @@
 .nrg-review-note textarea{border:1px solid #e8e2e6;border-radius:9px;width:100%;max-width:500px;font-size:11px}
 .nrg-review-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .nrg-app .nrg-review-actions .button{border-radius:9px}
+
+
+/* Integrated advanced controls: scoped to Newsroom Guard, not WordPress global settings. */
+.nrg-app .nrg-advanced-form{display:block}
+.nrg-app .nrg-advanced-form>.nrg-panel{margin-bottom:16px}
+.nrg-app .nrg-advanced-select{
+ width:240px;max-width:50%;min-height:36px;border:1px solid #e9e4e7;
+ border-radius:10px;background:#fff;padding:7px 10px;font-size:12px
+}
+.nrg-app .nrg-advanced-lines{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.nrg-app .nrg-advanced-lines>span{max-width:100%}
+.nrg-app .nrg-advanced-textarea{
+ width:100%;max-width:100%;min-height:110px;border:1px solid #e9e4e7;
+ border-radius:10px;background:#fff;padding:12px 13px;font:12px/1.55 ui-monospace,
+ SFMono-Regular,Consolas,"Liberation Mono",monospace;
+ color:#29252a;resize:vertical;white-space:pre-wrap
+}
+.nrg-app .nrg-advanced-textarea:focus,.nrg-app .nrg-advanced-select:focus{
+ border-color:#df4a7a;box-shadow:var(--nrg-ring);outline:0
+}
+.nrg-app .nrg-advanced-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.nrg-app .nrg-advanced-tools form{margin:0}
+.nrg-app .nrg-advanced-tools .button{border-radius:10px;min-height:36px;font-weight:600}
+.nrg-app .nrg-advanced-preview{
+ max-width:100%;overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;
+ background:#f6f4f5;border:1px solid #ede8eb;border-radius:12px;
+ padding:15px;font:11px/1.7 ui-monospace,Consolas,"Liberation Mono",monospace;
+ color:#45414a;margin-top:15px
+}
+@media(max-width:600px){
+ .nrg-app .nrg-advanced-select{width:100%;max-width:100%}
+}

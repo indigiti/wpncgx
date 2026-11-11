@@ -23,12 +23,19 @@ final class Purger {
         // Don't purge for ordinary draft changes or autosaves.
         if ($post->post_status !== 'publish' &&
             (!($before instanceof \WP_Post) || $before->post_status !== 'publish')) return;
-        $this->purge_post($postId);
+        $this->purge_post($postId, $before instanceof \WP_Post ? $before : null);
     }
 
-    private function purge_post(int $postId): void {
+    private function purge_post(int $postId, ?\WP_Post $before = null): void {
         $settings = Settings::get_all();
         $urls = [];
+        // Slug changes, trashing and unpublishing can leave an old public
+        // URL cached even when the new draft permalink is different.
+        // Use the pre-update WP_Post without another database lookup.
+        if ($before instanceof \WP_Post && $before->post_status === 'publish') {
+            $oldUrl = get_permalink($before);
+            if (is_string($oldUrl) && $oldUrl !== '') $urls[] = $oldUrl;
+        }
         $url = get_permalink($postId);
         if (is_string($url) && $url !== '') $urls[] = $url;
         if (!empty($settings['purge_home'])) $urls[] = home_url('/');

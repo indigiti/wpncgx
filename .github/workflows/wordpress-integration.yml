@@ -88,7 +88,7 @@ jobs:
               WP_CLI::error("Reviewer is not eligible.");
             }
             $_REQUEST["_wpnonce"] = wp_create_nonce("ncg_ed_review");
-            $_POST = ["review_id"=>$r->id,"decision"=>"approve","note"=>"Independent editorial review passed"];
+            $_POST = ["review_id"=>$r->id,"snapshot_hash"=>$r->base_hash,"decision"=>"approve","note"=>"Independent editorial review passed"];
             \NCG\EditorialWorkflow::review();
           '
       - name: Verify published article and reviewer audit after decision

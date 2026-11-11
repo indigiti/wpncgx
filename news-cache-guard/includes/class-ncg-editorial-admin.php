@@ -21,7 +21,9 @@ final class EditorialAdmin {
         echo '<div class="wrap nrg-app"><h1>Editorial Approval Queue</h1>';
         if (!empty($_GET['ncg_ed_notice'])) echo '<div class="nrg-note nrg-note-success">' .
             esc_html(sanitize_text_field(wp_unslash($_GET['ncg_ed_notice']))) . '</div>';
-        self::queue();
+        $id = absint($_GET['review_id'] ?? 0);
+        if ($id) self::review_detail($id);
+        else self::queue();
         echo '</div>';
     }
     public static function render_proposal(): void {
@@ -129,22 +131,10 @@ final class EditorialAdmin {
                 '</small></td><td>' . esc_html(get_the_author_meta('display_name', (int)$r->submitter_id)) .
                 '</td><td>' . esc_html(ucfirst($r->kind)) . '</td><td>' . esc_html($r->created_utc) . '</td><td>';
             if ($can) {
-                $decoded = json_decode((string)$r->payload, true);
-                echo '<details><summary>Inspect submitted content</summary><div class="nrg-review-inspection">';
-                if ($r->kind === 'revision') {
-                    echo '<p><strong>Live title:</strong> ' . esc_html((string)$p->post_title) . '</p>';
-                }
-                echo '<p><strong>Submitted title:</strong> ' . esc_html((string)($decoded['title'] ?? $p->post_title)) . '</p>';
-                echo '<pre>' . esc_html(wp_json_encode($decoded, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)) . '</pre></div>';
-                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-                echo '<input type="hidden" name="action" value="ncg_ed_review">';
-                echo '<input type="hidden" name="review_id" value="' . (int)$r->id . '">';
-                echo '<input type="hidden" name="snapshot_hash" value="' . esc_attr($r->base_hash) . '">';
-                wp_nonce_field('ncg_ed_review');
-                echo '<label class="nrg-review-note">Review note<textarea name="note" rows="2" placeholder="Required for rejection or changes"></textarea></label>';
-                echo '<div class="nrg-review-actions"><button name="decision" value="approve" class="button button-primary">Approve & Publish</button> ';
-                echo '<button name="decision" value="changes" class="button">Request Changes</button> ';
-                echo '<button name="decision" value="reject" class="button">Reject</button></div></form></details>';
+                $review_url = current_user_can('manage_options') && class_exists(Dashboard::class, false)
+                    ? Dashboard::url('approvals', ['review_id'=>(int)$r->id])
+                    : add_query_arg(['page'=>'ncg-editorial-reviews','review_id'=>(int)$r->id], admin_url('edit.php'));
+                echo '<a class="button button-primary" href="' . esc_url($review_url) . '">Open review</a>';
             } else {
                 echo '<span class="nrg-chip nrg-chip-danger">Independent reviewer required</span>';
             }
@@ -156,6 +146,59 @@ final class EditorialAdmin {
         if ($more) echo '<a class="button" href="' . esc_url(add_query_arg('review_page', $page+1)) . '">Next</a>';
         echo '</div>';
     }
+    public static function review_detail(int $id): void {
+        if (!current_user_can('edit_others_posts') || !Editorial::on('approvals')) {
+            echo '<div class="nrg-note nrg-note-warning">Independent editorial review is not available.</div>';
+            return;
+        }
+        global $wpdb;
+        $table = Editorial::table('reviews');
+        $req = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id=%d AND status=%s", $id, 'pending'));
+        if (!$req || !EditorialWorkflow::eligible($req, get_current_user_id())) {
+            echo '<div class="nrg-note nrg-note-warning">Request not found or you cannot review this submission.</div>';
+            return;
+        }
+        $post=get_post((int)$req->post_id);
+        $submitted=json_decode((string)$req->payload, true);
+        if (!$post || !is_array($submitted)) {
+            echo '<div class="nrg-note nrg-note-warning">The submitted article snapshot is unavailable.</div>';
+            return;
+        }
+        $back=current_user_can('manage_options') && class_exists(Dashboard::class,false)
+            ? Dashboard::url('approvals')
+            : admin_url('edit.php?page=ncg-editorial-reviews');
+        echo '<p><a class="nrg-text-link" href="' . esc_url($back) . '">← Back to pending reviews</a></p>';
+        echo '<div class="nrg-queue-head"><h2>Independent article review</h2>';
+        echo '<p>Review ID #' . (int)$req->id . ' · ' . esc_html($req->created_utc) . ' UTC</p></div>';
+        echo '<div class="nrg-system-list">';
+        foreach ([
+            ['Submitted by',get_the_author_meta('display_name',(int)$req->submitter_id)],
+            ['Article ID',(string)$post->ID],
+            ['Review policy',(string)$req->policy],
+            ['Submission type',(string)$req->kind],
+        ] as $pair) echo '<div><span>' . esc_html($pair[0]) . '</span><strong>' . esc_html((string)$pair[1]) . '</strong></div>';
+        echo '</div><div class="nrg-review-inspection">';
+        echo '<h3>Submitted headline</h3><p>' . esc_html((string)($submitted['title'] ?? $post->post_title)) . '</p>';
+        if ($req->kind === 'revision') {
+            echo '<h3>Current live headline</h3><p>' . esc_html((string)$post->post_title) . '</p>';
+        }
+        echo '<h3>Submitted article content</h3><pre>' .
+            esc_html((string)($submitted['content'] ?? $post->post_content)) . '</pre>';
+        echo '<h3>Other submitted fields</h3><pre>' .
+            esc_html(wp_json_encode(array_diff_key($submitted, ['content'=>true]), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)) .
+            '</pre></div>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="ncg_ed_review">';
+        echo '<input type="hidden" name="review_id" value="' . (int)$req->id . '">';
+        echo '<input type="hidden" name="snapshot_hash" value="' . esc_attr($req->base_hash) . '">';
+        wp_nonce_field('ncg_ed_review');
+        echo '<label class="nrg-review-note">Review note<textarea name="note" rows="3" placeholder="Required for rejection or requested changes"></textarea></label>';
+        echo '<div class="nrg-review-actions"><button name="decision" value="approve" class="button button-primary">Approve & Publish</button> ';
+        echo '<button name="decision" value="changes" class="button">Request Changes</button> ';
+        echo '<button name="decision" value="reject" class="button">Reject</button></div></form>';
+    }
+
     private static function proposal(): void {
         if (!Editorial::on('approvals')) { echo '<p>Approval workflow is disabled.</p>'; return; }
         $id = absint($_GET['post'] ?? 0);

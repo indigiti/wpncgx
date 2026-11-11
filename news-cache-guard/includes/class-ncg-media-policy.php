@@ -20,6 +20,7 @@ final class MediaPolicy {
             add_filter('upload_mimes', [self::class, 'allowed_mimes'], 999, 1);
             add_filter('wp_handle_upload_prefilter', [self::class, 'check_upload'], 10, 1);
             add_filter('wp_handle_sideload_prefilter', [self::class, 'check_upload'], 10, 1);
+            add_action('admin_notices', [self::class, 'media_upload_notice']);
         }
         if (Modules::on('category_creation')) {
             add_filter('pre_insert_term', [self::class, 'block_category_creation'], 10, 3);
@@ -34,6 +35,14 @@ final class MediaPolicy {
             add_action('added_post_meta', [self::class, 'thumbnail_meta_changed'], 20, 4);
             add_action('updated_post_meta', [self::class, 'thumbnail_meta_changed'], 20, 4);
         }
+    }
+
+    public static function media_upload_notice(): void {
+        if (!is_admin() || !current_user_can('upload_files')) return;
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || !in_array((string)$screen->id, ['upload','media'], true)) return;
+        echo '<div class="notice notice-warning"><p><strong>' .
+            esc_html(self::ERROR) . '</strong></p></div>';
     }
 
     public static function allowed_mimes(array $mimes): array {

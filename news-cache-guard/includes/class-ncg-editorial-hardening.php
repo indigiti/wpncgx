@@ -32,9 +32,11 @@ final class EditorialHardening {
     }
     public static function blocked(int $id, int $actor): bool {
         $p = get_post($id);
-        if (!$p || $p->post_type !== 'post' || Editorial::bypass($actor)) return false;
-        if (in_array($p->post_status, ['publish', 'future'], true) && Editorial::on('approvals')) return true;
-        return Editorial::locked($p);
+        if (!$p || $p->post_type !== 'post') return false;
+        // Approval separation always outranks the timed-lock exception list.
+        if (in_array($p->post_status, ['publish', 'future'], true)
+            && Editorial::on('approvals') && !Editorial::is_admin($actor)) return true;
+        return Editorial::locked($p) && !Editorial::bypass($actor);
     }
 
     public static function rest_pre_insert($prepared, $request) {

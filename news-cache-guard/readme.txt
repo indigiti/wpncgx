@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc3
+Stable tag: 1.2.0-rc4
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,14 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc4 =
+* Enable WordPress-native GitHub Releases update detection through the Update URI header.
+* Add Stable/Testing channel selection and manual Check Now under Newsroom Guard Module Manager.
+* Verify GitHub release ZIP SHA-256 and package identity before WordPress installation.
+* Automatic installation remains controlled by WordPress, not enabled by this plugin.
+* See GITHUB-UPDATES.md; one manual upgrade from pre-updater versions is required.
+
 
 = 1.2.0-rc3 =
 * Add optional strict JPEG/WebP uploads up to 500 KB, including WordPress sideload validation.

@@ -127,6 +127,7 @@ final class Dashboard {
         echo '<main class="nrg-main"><header class="nrg-topbar"><div class="nrg-breadcrumb">Newsroom Guard <span>/</span> ' .
             esc_html($items[$tab][0]) . '</div><div class="nrg-top-actions">';
         echo '<span class="nrg-top-site">' . esc_html(get_bloginfo('name')) . '</span>';
+        echo '<a class="nrg-small-btn" href="' . esc_url(self::url('settings',['panel'=>'updates'])) . '">GitHub updates</a>';
         echo '<a class="nrg-small-btn" href="' . esc_url(self::url('settings',['panel'=>'advanced'])) . '">Advanced controls</a>';
         echo '</div></header><div class="nrg-content">';
         if (isset($_GET['nrg_review_notice'])) self::note(sanitize_text_field(wp_unslash($_GET['nrg_review_notice'])), 'success');
@@ -143,6 +144,8 @@ final class Dashboard {
                 'htaccess_failed'=>'Settings saved, but .htaccess synchronization failed. Check server permissions.',
                 'module_saved'=>'Module switches saved. Any independent MU plugin still requires separate management.',
                 'confirm_required'=>'Enable editorial enforcement only after confirming your staging checks.',
+                'github_saved'=>'GitHub update channel saved. Recheck releases to refresh WordPress update status.',
+                'github_checked'=>'WordPress GitHub release update check completed.',
             ];
             if (isset($messages[$message])) self::note($messages[$message], $message === 'saved' || $message === 'module_saved' ? 'success' : 'warning');
         }
@@ -668,9 +671,91 @@ final class Dashboard {
             ['panel'=>'advanced']);
     }
 
+    /**
+     * Release settings deliberately live inside Module Manager so the plugin
+     * retains one WordPress admin interface and familiar Plugins -> Update.
+     */
+    private static function github_updates(): void {
+        $channel = GitHubUpdates::channel();
+        $status = GitHubUpdates::release_status($channel);
+        $release = $status['release'];
+        $editable = current_user_can('update_plugins') &&
+            (!is_multisite() || current_user_can('manage_network_plugins'));
+
+        echo '<p><a class="nrg-text-link" href="' . esc_url(self::url('settings')) .
+            '">← Back to Module Manager</a></p>';
+        self::card_open('GitHub Releases', 'Official source: indigiti/wpncgx · WordPress-native update system');
+        echo '<div class="nrg-system-list">';
+        echo '<div><span>Installed WordPress plugin</span><strong>Newsroom Guard ' . esc_html(NCG_VERSION) . '</strong></div>';
+        echo '<div><span>Source repository</span><strong><a href="' . esc_url(GitHubUpdates::UPDATE_URI) .
+            '" target="_blank" rel="noopener noreferrer">indigiti/wpncgx</a></strong></div>';
+        echo '<div><span>Release channel</span><strong>' .
+            esc_html($channel === 'testing' ? 'Testing (includes prereleases)' : 'Stable only') . '</strong></div>';
+
+        if ($status['status'] === 'ok' && is_array($release)) {
+            $has_update = version_compare($release['version'], NCG_VERSION, '>');
+            echo '<div><span>Latest eligible release</span><strong>' . esc_html($release['version']) . '</strong></div>';
+            echo '<div><span>Update status</span><strong>';
+            self::chip($has_update ? 'Newer release available' : 'No newer release',
+                $has_update ? 'danger' : 'soft');
+            echo '</strong></div>';
+            echo '<div><span>Release notes</span><strong><a href="' . esc_url($release['url']) .
+                '" target="_blank" rel="noopener noreferrer">View verified GitHub release</a></strong></div>';
+        } else {
+            echo '<div><span>Latest eligible release</span><strong>' .
+                esc_html($status['status'] === 'empty' ? 'None in selected channel' : 'Unavailable') .
+                '</strong></div>';
+            self::note((string)$status['message'], $status['status'] === 'error' ? 'warning' : 'neutral');
+        }
+        if (!empty($status['checked'])) {
+            echo '<div><span>Last GitHub API check</span><strong>' .
+                esc_html(gmdate('Y-m-d H:i', (int)$status['checked'])) . ' UTC</strong></div>';
+        }
+        echo '</div>';
+        self::card_close();
+
+        self::card_open('Release channel', 'Stable is recommended for production news publishing sites');
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="nrg_github_save">';
+        wp_nonce_field('nrg_github_save');
+        echo '<fieldset class="nrg-update-choices"><legend class="screen-reader-text">GitHub release channel</legend>';
+        echo '<label><input type="radio" name="channel" value="stable" ' .
+            checked($channel, 'stable', false) . ($editable ? '' : ' disabled') .
+            '><span><strong>Stable</strong><small>Official final releases only. Never install release candidates automatically.</small></span></label>';
+        echo '<label><input type="radio" name="channel" value="testing" ' .
+            checked($channel, 'testing', false) . ($editable ? '' : ' disabled') .
+            '><span><strong>Testing</strong><small>Includes GitHub prereleases (such as v1.2.0-rc4). Use on staging first.</small></span></label>';
+        echo '</fieldset>';
+        echo '<div class="nrg-form-footer"><button type="submit" class="button button-primary nrg-primary"' .
+            ($editable ? '' : ' disabled') . '>Save release channel</button></div>';
+        echo '</form>';
+        self::card_close();
+
+        self::card_open('Update and installation controls', 'WordPress manages file replacement, plugin permissions and rollback');
+        echo '<p>After a new eligible GitHub release is published, WordPress will display an available update for Newsroom Guard under Plugins. Updates require the built-in <code>update_plugins</code> capability.</p>';
+        echo '<p>The first version containing the GitHub updater must be installed once using DigiOps or a manual ZIP. Future releases use the WordPress update mechanism.</p>';
+        echo '<p>Automatic installation is not switched on by this module. Manage the native WordPress per-plugin auto-update setting on the Plugins page if you explicitly want unattended updates. Avoid prerelease auto-updates on a production newsroom.</p>';
+        echo '<div class="nrg-advanced-tools">';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="nrg_github_check">';
+        wp_nonce_field('nrg_github_check');
+        echo '<button type="submit" class="button"' . ($editable ? '' : ' disabled') .
+            '>Check GitHub releases now</button></form>';
+        echo '<a class="button" href="' . esc_url(admin_url('plugins.php')) .
+            '">Open WordPress Plugins</a>';
+        echo '</div>';
+        echo '<p class="nrg-footnote">Only exact release ZIPs published from the official GitHub repository are accepted; WordPress verifies their SHA-256 checksum before installing. Failed verification blocks the update rather than replacing site files.</p>';
+        if (!$editable) self::note('Only a WordPress administrator with plugin-update permissions can change the release channel or force a check.', 'warning');
+        self::card_close();
+    }
+
     private static function settings(): void {
         if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'advanced') {
             self::advanced();
+            return;
+        }
+        if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'updates') {
+            self::github_updates();
             return;
         }
         $e=Editorial::settings();
@@ -700,6 +785,8 @@ final class Dashboard {
         self::system_rows();
         echo '<div class="nrg-divider"></div><h3>Cache & Performance</h3><p>LiteSpeed keeps its own cache controls. Change this plugin’s query and purge controls in the Cache tab.</p>';
         echo '<a class="nrg-text-link" href="' . esc_url(self::url('cache')) . '">Open cache controls →</a>';
+        echo '<div class="nrg-divider"></div><h3>GitHub Release Updates</h3><p>Choose Stable or Testing releases; inspect the latest version and check for updates using native WordPress plugin updates.</p>';
+        echo '<a class="nrg-text-link" href="' . esc_url(self::url('settings',['panel'=>'updates'])) . '">Manage GitHub updates →</a>';
         echo '<div class="nrg-divider"></div><h3>AI Intelligence</h3><p>Not implemented. No pretend AI switch is shown.</p>';
         echo '<div class="nrg-divider"></div><h3>Advanced origin rules</h3>';
         echo '<p>Existing CIDR rules, proxy trust, XML-RPC and diagnostic tools are preserved.</p>';

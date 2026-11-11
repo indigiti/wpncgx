@@ -443,6 +443,7 @@ final class Dashboard {
 
     private static function reports(): void {
         if (!Modules::on('reports')) {self::note('Reports module is OFF. Enable it from Module Manager. Existing audit evidence is preserved.','warning');return;}
+        self::report_summary();
         self::card_open('Export editorial evidence','Maximum 5,000 latest matching events per export; UTC timestamps; administrator-only');
         if (!self::tables_ready()) self::note('No editorial audit table is available.', 'warning');
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" class="nrg-export-form">';
@@ -454,6 +455,36 @@ final class Dashboard {
         echo '<label class="nrg-export-check"><input type="checkbox" name="alerts_only" value="1"> Security events only</label>';
         self::action_form('nrg_export_events','Export CSV');
         echo '</form><p class="nrg-footnote">CSV protects spreadsheet formula cells. Export access is restricted to administrators; handle IP addresses and editorial data under your retention policy.</p>';
+        self::card_close();
+    }
+
+    private static function report_summary(): void {
+        if (!self::tables_ready()) return;
+        global $wpdb;
+        $events=Editorial::table('events');
+        $reviews=Editorial::table('reviews');
+        $from=gmdate('Y-m-d H:i:s', time()-30*DAY_IN_SECONDS);
+        $total=(int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $events WHERE created_utc >= %s", $from));
+        $security=(int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $events WHERE severity IN ('warning','critical') AND created_utc >= %s", $from));
+        $pending=(int)$wpdb->get_var("SELECT COUNT(*) FROM $reviews WHERE status='pending'");
+        echo '<div class="nrg-stats">';
+        self::stat('Audit events',number_format_i18n($total),'Last 30 days UTC');
+        self::stat('Security events',number_format_i18n($security),'Last 30 days UTC','nrg-stat-accent');
+        self::stat('Pending reviews',number_format_i18n($pending),'Current review queue');
+        self::stat('Reporting coverage',Editorial::on('audit')?'Active':'Paused','Audit collection status');
+        echo '</div>';
+        self::card_open('Most frequent actions','Actual recorded events from the last 30 days UTC');
+        $top=(array)$wpdb->get_results($wpdb->prepare(
+            "SELECT action, COUNT(*) AS total FROM $events WHERE created_utc >= %s GROUP BY action ORDER BY total DESC LIMIT 6", $from));
+        if (!$top) {echo '<div class="nrg-empty">No recorded activity in this reporting window.</div>';}
+        else {
+            echo '<div class="nrg-system-list">';
+            foreach ($top as $r) echo '<div><span>' . esc_html($r->action) . '</span><strong>' .
+                esc_html(number_format_i18n((int)$r->total)) . '</strong></div>';
+            echo '</div>';
+        }
         self::card_close();
     }
 

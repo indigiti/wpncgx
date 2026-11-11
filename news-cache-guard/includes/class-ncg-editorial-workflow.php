@@ -18,7 +18,8 @@ final class EditorialWorkflow {
         add_action('admin_post_ncg_ed_propose', [self::class, 'propose']);
     }
     public static function publish_cap(array $all, array $required, array $args, $user): array {
-        if (Editorial::on('approvals') && $user && !Editorial::is_admin((int)$user->ID)) {
+        // Never call user_can() from user_has_cap: that recursively invokes this filter.
+        if (Editorial::on('approvals') && $user && empty($all['manage_options'])) {
             // Runtime-only; no global WordPress role changes. The Gutenberg UI
             // offers Submit for Review instead of a misleading Publish button.
             $all['publish_posts'] = false;

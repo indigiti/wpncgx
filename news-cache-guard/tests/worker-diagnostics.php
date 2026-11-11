@@ -32,7 +32,7 @@ if ($phase !== 'unavailable') {
                         throw new \RuntimeException('Store failure');
                     }
                     if ($GLOBALS['diagnostic_phase'] === 'future') $time = time() + 900;
-                    elseif ($GLOBALS['diagnostic_phase'] === 'overdue') $time = time() - 720;
+                    elseif ($GLOBALS['diagnostic_phase'] === 'overdue' || $GLOBALS['diagnostic_phase'] === 'both-off') $time = time() - 720;
                     else $time = time() - 45;
                     return new \DateTimeImmutable('@' . $time);
                 }

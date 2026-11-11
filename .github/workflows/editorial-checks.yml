@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - feature/editorial-controls
+      - feature/newsroom-dashboard
 
 jobs:
   php-lint-and-regression:

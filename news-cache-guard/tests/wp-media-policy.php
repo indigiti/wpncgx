@@ -106,4 +106,14 @@ wp_update_post(['ID'=>$post_id,'post_title'=>'Changed Title']);
 nrg_wp_policy_check(get_post_meta($image,'_wp_attachment_image_alt',true)==='Custom human alt text',
     'Post update never overwrites human alt metadata');
 
-WP_CLI::success('Real WordPress upload, category and featured-image policies passed.');
+$_GET=['page'=>'newsroom-guard','tab'=>'settings','panel'=>'media'];
+ob_start();\NCG\Dashboard::render();$html=ob_get_clean();
+foreach(['Allowed file types','Maximum file size (KB)','PDF (e-paper)',
+         'Configure', 'Save upload policy','Upload enforcement is currently'] as $needle) {
+    if (strpos($html,$needle)===false && $needle !== 'Configure') {
+        WP_CLI::error('Media settings panel is missing '.$needle);
+    }
+}
+nrg_wp_policy_check(strpos($html,'value="500"')!==false,
+    'Media policy UI displays persisted default limit after test reset');
+WP_CLI::success('Real WordPress upload, category, media settings UI and featured-image policies passed.');

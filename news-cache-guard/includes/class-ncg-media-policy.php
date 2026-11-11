@@ -11,7 +11,7 @@ namespace NCG;
 if (!defined('ABSPATH')) exit;
 
 final class MediaPolicy {
-    public const MAX_UPLOAD_BYTES = 512000; // 500 KiB? No: explicit 500,000? 500 * 1024 = 512000 bytes.
+    public const MAX_UPLOAD_BYTES = 500 * 1024; // Match the requested 500 KB (512,000 bytes).
     public const MAX_LABEL = '500 KB';
     public const ERROR = 'Newsroom Guard: only JPG/JPEG and WebP images of 500 KB or smaller are allowed.';
 

@@ -24,6 +24,7 @@ define('NCG_BASENAME', plugin_basename(__FILE__));
 
 require_once NCG_DIR . 'includes/class-ncg-settings.php';
 require_once NCG_DIR . 'includes/class-ncg-modules.php';
+require_once NCG_DIR . 'includes/class-ncg-media-policy.php';
 require_once NCG_DIR . 'includes/class-ncg-ip.php';
 require_once NCG_DIR . 'includes/class-ncg-counter.php';
 require_once NCG_DIR . 'includes/class-ncg-litespeed.php';

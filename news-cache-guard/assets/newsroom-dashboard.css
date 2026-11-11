@@ -176,3 +176,14 @@
 @media(max-width:780px){.nrg-app{margin:10px 8px 15px 0!important}.nrg-shell{display:block;border-radius:17px;min-height:0}.nrg-sidebar{border-right:0;border-bottom:1px solid #e9e5e7;padding:14px}.nrg-brand{padding-bottom:8px!important}.nrg-nav-label,.nrg-sidebar-bottom{display:none}.nrg-nav{display:flex;flex-wrap:nowrap;overflow-x:auto;padding:7px 0 3px}.nrg-nav-link{white-space:nowrap;flex:0 0 auto;padding:9px 12px}.nrg-topbar{padding:13px 18px}.nrg-content{padding:19px}.nrg-title-block h1{font-size:26px}}
 @media(max-width:480px){.nrg-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.nrg-stat{padding:15px 12px;min-height:110px}.nrg-stat strong{font-size:22px}.nrg-panel{padding:18px 14px}.nrg-top-site{display:none}.nrg-chart{gap:5px}.nrg-field{align-items:flex-start;flex-direction:column}.nrg-field>input{max-width:100%;width:100%}}
 @media(prefers-reduced-motion:reduce){.nrg-app *{transition:none!important;scroll-behavior:auto!important}}
+
+/* Review-specific affordances; collapsible evidence avoids overwhelming the queue. */
+.nrg-queue-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.nrg-queue-head p{color:#969198;font-size:11px}
+.nrg-review-inspection{padding:12px;border:1px solid #eee8ec;background:#fcfafb;border-radius:10px;margin:10px 0}
+.nrg-review-inspection p{font-size:11px;margin:0 0 9px}
+.nrg-review-inspection pre{max-height:220px;max-width:500px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px;line-height:1.5}
+.nrg-review-note{display:flex;flex-direction:column;gap:5px;color:#817a83;font-size:11px}
+.nrg-review-note textarea{border:1px solid #e8e2e6;border-radius:9px;width:100%;max-width:500px;font-size:11px}
+.nrg-review-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.nrg-app .nrg-review-actions .button{border-radius:9px}

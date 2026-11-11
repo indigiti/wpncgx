@@ -29,11 +29,9 @@ function nrg_wp_tmp($base64): string {
 }
 function nrg_wp_sideload($name,$base64): array {
     $tmp=nrg_wp_tmp($base64);
-    $result=wp_handle_sideload(
-        ['name'=>$name,'type'=>'application/octet-stream','tmp_name'=>$tmp,
-         'size'=>filesize($tmp),'error'=>0],
-        ['test_form'=>false]
-    );
+    $file=['name'=>$name,'type'=>'application/octet-stream','tmp_name'=>$tmp,
+         'size'=>filesize($tmp),'error'=>0];
+    $result=wp_handle_sideload($file, ['test_form'=>false]);
     if (file_exists($tmp)) @unlink($tmp);
     return $result;
 }
@@ -51,9 +49,9 @@ nrg_wp_policy_check(!empty($spoof['error']),
     'Real WordPress rejects PNG disguised as JPEG');
 $largeTmp=tempnam(sys_get_temp_dir(),'nrg-large');
 file_put_contents($largeTmp,str_repeat('X',\NCG\MediaPolicy::MAX_UPLOAD_BYTES+1));
-$large=wp_handle_sideload(
-    ['name'=>'oversized.jpg','type'=>'image/jpeg','tmp_name'=>$largeTmp,
-     'size'=>filesize($largeTmp),'error'=>0],['test_form'=>false]);
+$largeFile=['name'=>'oversized.jpg','type'=>'image/jpeg','tmp_name'=>$largeTmp,
+     'size'=>filesize($largeTmp),'error'=>0];
+$large=wp_handle_sideload($largeFile, ['test_form'=>false]);
 if (file_exists($largeTmp)) @unlink($largeTmp);
 nrg_wp_policy_check(!empty($large['error']), 'Real WordPress upload blocks files over 500 KB');
 

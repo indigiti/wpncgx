@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -Eq 'Plugin Name: Newsroom Guard' news-cache-guard/news-cache-guard.php
-          grep -Eq 'Version: 1\\.2\\.0-rc1' news-cache-guard/news-cache-guard.php
+          grep -Fq 'Version: 1.2.0-rc1' news-cache-guard/news-cache-guard.php
           grep -Fq "define('NCG_VERSION', '1.2.0-rc1');" news-cache-guard/news-cache-guard.php
           find news-cache-guard -name '*.php' -print0 | xargs -0 -n1 php -l
           bash -n news-cache-guard/tools/cache-probe.sh

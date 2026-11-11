@@ -7,6 +7,7 @@ final class EditorialAdmin {
     public static function boot(): void {
         add_action('admin_init', [self::class, 'register']);
         add_action('admin_menu', [self::class, 'editor_menus']);
+        add_action('admin_notices', [self::class, 'editorial_notice']);
     }
     public static function editor_menus(): void {
         add_submenu_page('edit.php', 'Editorial Reviews', 'Editorial Reviews',
@@ -27,6 +28,14 @@ final class EditorialAdmin {
         self::proposal();
         echo '</div>';
     }
+    public static function editorial_notice(): void {
+        if (empty($_GET['ncg_ed_notice']) || !current_user_can('edit_posts')) return;
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || $screen->id !== 'edit-post') return;
+        echo '<div class="notice notice-info is-dismissible"><p>' .
+            esc_html(sanitize_text_field(wp_unslash($_GET['ncg_ed_notice']))) . '</p></div>';
+    }
+
     public static function register(): void {
         register_setting('ncg_editorial', Editorial::OPTION, [
             'type'=>'array', 'default'=>Editorial::defaults(),

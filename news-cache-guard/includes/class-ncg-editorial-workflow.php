@@ -119,8 +119,11 @@ final class EditorialWorkflow {
             && ((int)$p->post_author === $actor || user_can($actor, 'edit_others_posts'));
     }
     private static function redirect(string $message, string $view = 'queue'): void {
-        wp_safe_redirect(add_query_arg(['page'=>'news-cache-guard','ncg_tab'=>'editorial',
-            'view'=>$view, 'ncg_ed_notice'=>$message], admin_url('options-general.php')));
+        $url = current_user_can('manage_options')
+            ? add_query_arg(['page'=>'news-cache-guard','ncg_tab'=>'editorial','view'=>$view,
+                'ncg_ed_notice'=>$message], admin_url('options-general.php'))
+            : add_query_arg(['page'=>'ncg-editorial-reviews','ncg_ed_notice'=>$message], admin_url('edit.php'));
+        wp_safe_redirect($url);
         exit;
     }
     public static function propose(): void {

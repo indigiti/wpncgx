@@ -60,6 +60,13 @@ More-specific CIDRs win.
 
 == Changelog ==
 
+= 1.2.0-rc3 =
+* Add optional strict JPEG/WebP uploads up to 500 KB, including WordPress sideload validation.
+* Add optional administrator-only category creation without modifying saved Editor role capabilities.
+* Add optional featured-image alt fallback for empty metadata with post and attachment permission checks.
+* All policies OFF by default; document MediaFlow and newspaper PDF ingestion compatibility.
+== Changelog ==
+
 = 1.2.0-rc2 =
 * Single Newsroom Guard administration interface, with advanced controls fully moved into the dashboard.
 * Old Settings page and duplicate Module Manager shortcut redirect to the corresponding dashboard views.

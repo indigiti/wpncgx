@@ -20,6 +20,7 @@ final class Plugin {
         $this->guard = new Guard();
         $this->purger = new Purger();
         $this->admin = new Admin();
+        GitHubUpdates::boot();
         WorkerGuard::boot();
         Editorial::boot();
         MediaPolicy::boot();

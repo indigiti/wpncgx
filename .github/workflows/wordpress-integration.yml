@@ -70,6 +70,50 @@ jobs:
             echo "::error::Unapproved direct post mutation did not fail closed."
             exit 1
           fi
+      - name: End-to-end approval decision by independent Editor
+        run: |
+          set -euo pipefail
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $reviewer = get_user_by("login","ncg-editor-b");
+            wp_set_current_user($reviewer->ID);
+            $posts = get_posts(["post_type"=>"post","post_status"=>"pending",
+              "s"=>"Author draft approval", "numberposts"=>5]);
+            if (!$posts) WP_CLI::error("Pending Author article missing.");
+            global $wpdb;
+            $table = \NCG\Editorial::table("reviews");
+            $r = $wpdb->get_row($wpdb->prepare(
+              "SELECT * FROM $table WHERE post_id=%d AND status=%s ORDER BY id DESC LIMIT 1",
+              $posts[0]->ID, "pending"));
+            if (!$r || !\NCG\EditorialWorkflow::eligible($r, $reviewer->ID)) {
+              WP_CLI::error("Reviewer is not eligible.");
+            }
+            $_REQUEST["_wpnonce"] = wp_create_nonce("ncg_ed_review");
+            $_POST = ["review_id"=>$r->id,"decision"=>"approve","note"=>"Independent editorial review passed"];
+            \NCG\EditorialWorkflow::review();
+          '
+      - name: Verify published article and reviewer audit after decision
+        run: |
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            global $wpdb;
+            $posts = get_posts(["post_type"=>"post","post_status"=>"publish",
+              "s"=>"Author draft approval","numberposts"=>5]);
+            if (!$posts) WP_CLI::error("Approved article did not publish.");
+            $post_id=$posts[0]->ID;
+            $table = \NCG\Editorial::table("reviews");
+            $req = $wpdb->get_row($wpdb->prepare(
+              "SELECT * FROM $table WHERE post_id=%d ORDER BY id DESC LIMIT 1",$post_id));
+            $editor_b=get_user_by("login","ncg-editor-b");
+            if (!$req || $req->status!=="approved" ||
+                (int)$req->reviewer_id!==(int)$editor_b->ID) {
+              WP_CLI::error("Independent approval record missing.");
+            }
+            $events=\NCG\Editorial::table("events");
+            $count=(int)$wpdb->get_var($wpdb->prepare(
+              "SELECT COUNT(*) FROM $events WHERE post_id=%d AND action=%s",
+              $post_id,"independently_approved"));
+            if (!$count) WP_CLI::error("Approval audit event missing.");
+            WP_CLI::success("Approved article, reviewer identity and audit event verified.");
+          '
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

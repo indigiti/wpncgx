@@ -1,3 +1,11 @@
+# v1.2.0-rc8 — P2 resource efficiency (staging)
+
+- Optimize Redis counters and daily stats: existing entries use one atomic INCR instead of add + incr. Cold-key creation uses ADD; concurrent creation races retry INCR safely.
+- Preserve fail-open behavior on Redis failure, no non-atomic read-modify-write, no new Redis cache namespace and no changes to rate thresholds.
+- Avoid the separate last-editor SQL query in Post History when the last edit is already among the 20 recent events, with the old query as a fallback for long histories.
+- Provide read-only administrator PHP request snapshots: elapsed so far, current/peak memory, database queries and external object cache availability. These are not server CPU/RAM or cache-hit metrics.
+- Add unit and WordPress integration checks; do not claim performance improvements without before/after production-like staging benchmarks.
+
 # v1.2.0-rc7 — Performance foundation (staging)
 
 - Request-local Settings and Modules caches, invalidated after WordPress option changes and keyed by blog for Multisite isolation.

@@ -1,6 +1,6 @@
 # Editorial & Publishing module (staging release candidate)
 
-This optional module is part of News Cache Guard's **Settings → News Cache Guard → Editorial & Publishing** tab.
+This optional module is part of Newsroom Guard's **Settings → Newsroom Guard → Editorial & Publishing** tab.
 
 ## Safe defaults
 

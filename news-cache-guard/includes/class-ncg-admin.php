@@ -51,6 +51,8 @@ final class Admin {
 
     public function render(): void {
         if (!current_user_can('manage_options')) return;
+        $tab = isset($_GET['ncg_tab']) ? sanitize_key(wp_unslash($_GET['ncg_tab'])) : 'cache';
+        if ($tab === 'editorial') { EditorialAdmin::render(); return; }
         $s = Settings::get_all();
         $notice = isset($_GET['ncg_notice']) ? sanitize_text_field(wp_unslash($_GET['ncg_notice'])) : '';
         $ls = LiteSpeed::detected();
@@ -62,6 +64,7 @@ final class Admin {
         ?>
         <div class="wrap">
             <h1>News Cache Guard for LiteSpeed <small style="font-size:13px">v<?php echo esc_html(NCG_VERSION); ?></small></h1>
+            <?php EditorialAdmin::tabs('cache'); ?>
             <?php if ($notice): ?><div class="notice notice-info"><p><?php echo esc_html($notice); ?></p></div><?php endif; ?>
             <?php if (get_option(Settings::OPTION, []) && is_array(get_option(Settings::OPTION, [])) && (get_option(Settings::OPTION, [])['default_policy'] ?? '') === 'force_cache'): ?><div class="notice notice-warning"><p><strong>Safety upgrade:</strong> a previously saved Force Cache policy has been converted to Safe Shared Cache at runtime. Public cache exclusions are never overridden.</p></div><?php endif; ?>
             <?php if (!$proxyIpValid): ?><div class="notice notice-warning"><p><strong>Visitor identity unavailable:</strong> REMOTE_ADDR is invalid or a trusted Cloudflare proxy did not provide a valid CF-Connecting-IP. IP-based limits fail open to avoid blocking everyone behind one proxy.</p></div><?php endif; ?>

@@ -18,13 +18,15 @@ final class EditorialAdmin {
     }
     public static function render_reviews(): void {
         if (!current_user_can('edit_others_posts')) wp_die('Forbidden.');
-        echo '<div class="wrap"><h1>Editorial Approval Queue</h1>';
+        echo '<div class="wrap nrg-app"><h1>Editorial Approval Queue</h1>';
+        if (!empty($_GET['ncg_ed_notice'])) echo '<div class="nrg-note nrg-note-success">' .
+            esc_html(sanitize_text_field(wp_unslash($_GET['ncg_ed_notice']))) . '</div>';
         self::queue();
         echo '</div>';
     }
     public static function render_proposal(): void {
         if (!current_user_can('edit_posts')) wp_die('Forbidden.');
-        echo '<div class="wrap">';
+        echo '<div class="wrap nrg-app">';
         self::proposal();
         echo '</div>';
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Modular editorial controls for News Cache Guard.
+ * Modular editorial controls for Newsroom Guard.
  * Cache protection never depends on the editorial master switch.
  */
 declare(strict_types=1);
@@ -136,7 +136,7 @@ final class Editorial {
         return $id > 0 && user_can($id, 'edit_others_posts') && (self::is_editor($id) || self::is_admin($id));
     }
     public static function ip(): string {
-        // Reuse News Cache Guard's trusted Cloudflare/REMOTE_ADDR resolver.
+        // Reuse Newsroom Guard's trusted Cloudflare/REMOTE_ADDR resolver.
         return IP::client_ip() ?? '';
     }
     public static function source(): string {
@@ -163,7 +163,7 @@ final class Editorial {
             $key = 'ncg_ed_mail_' . md5($action . '|' . $post . '|' . gmdate('YmdH'));
             if (get_transient($key)) return;
             set_transient($key, 1, HOUR_IN_SECONDS);
-            wp_mail(get_option('admin_email'), '[News Cache Guard] Editorial alert: ' . $action,
+            wp_mail(get_option('admin_email'), '[Newsroom Guard] Editorial alert: ' . $action,
                 'Review the editorial security log at ' . admin_url('options-general.php?page=news-cache-guard&ncg_tab=editorial&view=alerts'));
         }
     }

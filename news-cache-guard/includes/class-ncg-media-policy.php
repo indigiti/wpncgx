@@ -11,9 +11,66 @@ namespace NCG;
 if (!defined('ABSPATH')) exit;
 
 final class MediaPolicy {
-    public const MAX_UPLOAD_BYTES = 500 * 1024; // Match the requested 500 KB (512,000 bytes).
+    public const MAX_UPLOAD_BYTES = 500 * 1024; // Backward-compatible default.
     public const MAX_LABEL = '500 KB';
-    public const ERROR = 'Newsroom Guard: only JPG/JPEG and WebP images of 500 KB or smaller are allowed.';
+    public const ERROR = 'Newsroom Guard: upload rejected by the configured file policy.';
+    public const OPTION = 'ncg_media_upload_policy';
+    public const MIN_KB = 1;
+    public const MAX_KB = 20480; // Cap administrator-configured policy at 20 MiB.
+
+    /**
+     * An intentionally small allowlist; SVG/HTML and executable file types
+     * cannot be enabled. PDFs are optional for newsroom/e-paper workflows.
+     */
+    public static function supported_types(): array {
+        return [
+            'jpeg' => ['label'=>'JPG / JPEG', 'ext'=>'jpg|jpeg', 'mime'=>'image/jpeg'],
+            'webp' => ['label'=>'WebP', 'ext'=>'webp', 'mime'=>'image/webp'],
+            'png'  => ['label'=>'PNG', 'ext'=>'png', 'mime'=>'image/png'],
+            'gif'  => ['label'=>'GIF', 'ext'=>'gif', 'mime'=>'image/gif'],
+            'pdf'  => ['label'=>'PDF (e-paper)', 'ext'=>'pdf', 'mime'=>'application/pdf'],
+        ];
+    }
+
+    public static function defaults(): array {
+        return ['max_kb'=>500, 'types'=>['jpeg','webp']];
+    }
+
+    public static function clean($raw): array {
+        $raw = is_array($raw) ? $raw : [];
+        $limit = isset($raw['max_kb']) && is_scalar($raw['max_kb']) ? (int)$raw['max_kb'] : 500;
+        $choices = isset($raw['types']) && is_array($raw['types']) ? $raw['types'] : [];
+        $types = [];
+        foreach (array_keys(self::supported_types()) as $key) {
+            if (in_array($key, $choices, true)) $types[] = $key;
+        }
+        // The saving handler rejects empty selections. Corrupt stored settings
+        // fail back to the known working default, not an unrestricted MIME list.
+        if (!$types) $types = self::defaults()['types'];
+        return [
+            'max_kb' => max(self::MIN_KB,min(self::MAX_KB,$limit)),
+            'types' => $types,
+        ];
+    }
+
+    public static function settings(): array {
+        $stored = get_option(self::OPTION, []);
+        if (!is_array($stored)) $stored = [];
+        return self::clean(array_replace(self::defaults(), $stored));
+    }
+
+    public static function max_bytes(): int {
+        return self::settings()['max_kb'] * 1024;
+    }
+
+    public static function error_message(): string {
+        $config = self::settings();
+        $supported = self::supported_types();
+        $names = [];
+        foreach ($config['types'] as $type) $names[] = $supported[$type]['label'];
+        return 'Newsroom Guard: only ' . implode(', ', $names) . ' files up to ' .
+            number_format((int)$config['max_kb']) . ' KB are allowed.';
+    }
 
     public static function boot(): void {
         if (Modules::on('media_uploads')) {
@@ -26,12 +83,9 @@ final class MediaPolicy {
             add_filter('pre_insert_term', [self::class, 'block_category_creation'], 10, 3);
         }
         if (Modules::on('featured_alt')) {
-            // wp_after_insert_post runs after post data and thumbnail metadata;
-            // REST has its own final hook for Gutenberg's featured_media update.
             add_action('wp_after_insert_post', [self::class, 'after_post_saved'], 20, 4);
             add_action('rest_after_insert_post', [self::class, 'rest_post_saved'], 20, 3);
             add_action('rest_after_insert_page', [self::class, 'rest_post_saved'], 20, 3);
-            // Handles setting a thumbnail after an initial post save.
             add_action('added_post_meta', [self::class, 'thumbnail_meta_changed'], 20, 4);
             add_action('updated_post_meta', [self::class, 'thumbnail_meta_changed'], 20, 4);
         }
@@ -42,52 +96,81 @@ final class MediaPolicy {
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
         if (!$screen || !in_array((string)$screen->id, ['upload','media'], true)) return;
         echo '<div class="notice notice-warning"><p><strong>' .
-            esc_html(self::ERROR) . '</strong></p></div>';
+            esc_html(self::error_message()) . '</strong></p></div>';
     }
 
     public static function allowed_mimes(array $mimes): array {
         if (!Modules::on('media_uploads')) return $mimes;
-        // Intentionally global when explicitly enabled; documents, PNG/GIF,
-        // uploads by service users and non-JPEG sources will be rejected.
-        return [
-            'jpg|jpeg' => 'image/jpeg',
-            'webp' => 'image/webp',
-        ];
+        $out = [];
+        $supported = self::supported_types();
+        foreach (self::settings()['types'] as $key) {
+            $row = $supported[$key];
+            $out[$row['ext']] = $row['mime'];
+        }
+        return $out;
     }
 
     public static function check_upload(array $file): array {
-        if (!Modules::on('media_uploads')) return $file;
-        if (!empty($file['error'])) return $file;
+        if (!Modules::on('media_uploads') || !empty($file['error'])) return $file;
 
+        $deny = self::error_message();
         $tmp = isset($file['tmp_name']) && is_string($file['tmp_name']) ? $file['tmp_name'] : '';
         $name = isset($file['name']) && is_string($file['name']) ? $file['name'] : '';
         if (!$name || !$tmp || !is_file($tmp) || !is_readable($tmp)) {
-            $file['error'] = self::ERROR;
+            $file['error'] = $deny;
             return $file;
         }
         $size = filesize($tmp);
-        if ($size === false || $size < 1 || $size > self::MAX_UPLOAD_BYTES) {
-            $file['error'] = self::ERROR;
+        if ($size === false || $size < 1 || $size > self::max_bytes()) {
+            $file['error'] = $deny;
             return $file;
         }
 
-        $extension = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
-        if (!in_array($extension, ['jpg', 'jpeg', 'webp'], true)) {
-            $file['error'] = self::ERROR;
+        $ext = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
+        $supported = self::supported_types();
+        $expected_type = null;
+        foreach (self::settings()['types'] as $key) {
+            if (in_array($ext, explode('|', $supported[$key]['ext']), true)) {
+                $expected_type = $supported[$key]['mime'];
+                break;
+            }
+        }
+        if ($expected_type === null) {
+            $file['error'] = $deny;
             return $file;
         }
-        $types = self::allowed_mimes([]);
-        // WordPress inspects file contents (not the client-supplied MIME string).
-        $checked = wp_check_filetype_and_ext($tmp, $name, $types);
-        $expected = $extension === 'webp' ? 'image/webp' : 'image/jpeg';
-        $real = @getimagesize($tmp);
-        if (!is_array($checked)
-            || ($checked['type'] ?? '') !== $expected
-            || !in_array((string)($checked['ext'] ?? ''), ['jpg','jpeg','webp'], true)
-            || !is_array($real)
-            || ($real['mime'] ?? '') !== $expected) {
-            $file['error'] = self::ERROR;
+
+        $checked = wp_check_filetype_and_ext($tmp, $name, self::allowed_mimes([]));
+        if (!is_array($checked) || ($checked['type'] ?? '') !== $expected_type ||
+            ($checked['ext'] ?? '') !== $ext) {
+            $file['error'] = $deny;
             return $file;
+        }
+
+        // Never trust extension or browser-provided MIME by themselves.
+        if ($expected_type === 'application/pdf') {
+            $fh = @fopen($tmp, 'rb');
+            $header = $fh ? fread($fh, 5) : '';
+            if ($fh) fclose($fh);
+            if ($header !== '%PDF-') {
+                $file['error'] = $deny;
+                return $file;
+            }
+            if (function_exists('finfo_open') && function_exists('finfo_file')) {
+                $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+                $mime = $finfo ? @finfo_file($finfo, $tmp) : false;
+                if ($finfo) finfo_close($finfo);
+                if ($mime !== 'application/pdf') {
+                    $file['error'] = $deny;
+                    return $file;
+                }
+            }
+        } else {
+            $image = @getimagesize($tmp);
+            if (!is_array($image) || ($image['mime'] ?? '') !== $expected_type) {
+                $file['error'] = $deny;
+                return $file;
+            }
         }
         return $file;
     }

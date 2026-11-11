@@ -50,6 +50,10 @@ Review [ADMIN-WORKSPACE.md](ADMIN-WORKSPACE.md) for implemented features, scope 
 
 Newsroom Guard → **Module Manager → Media and content policies** now includes three independently switchable rules: **JPG/JPEG and WebP only (500 KB maximum)**, **Administrator-only category creation**, and **fill empty featured-image alt text from the article title**. All default OFF. The strict upload rule also blocks PDFs and PNG files; do not enable it before checking your epaper and MediaFlow workflows. See [MEDIA-POLICIES.md](MEDIA-POLICIES.md) for validation, permission, accessibility and compatibility details.
 
+## GitHub release updates (v1.2.0-rc4)
+
+Newsroom Guard now integrates with native **WordPress Plugins → Update now** for releases from [indigiti/wpncgx](https://github.com/indigiti/wpncgx/releases). Configure **Stable** (default) or **Testing** (includes prereleases) under **Newsroom Guard → Module Manager → GitHub Release Updates**. The updater validates the exact GitHub ZIP URL and SHA-256 checksum before installation. WordPress administrators control automatic updates in the normal Plugins screen; nothing auto-installs by default. Existing `1.2.0-rc3` installs must receive this new updater code once through DigiOps or a manual ZIP. See [GITHUB-UPDATES.md](GITHUB-UPDATES.md) for setup, verification and limitations.
+
 ## Future work and module roadmap
 
 The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

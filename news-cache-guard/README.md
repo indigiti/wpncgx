@@ -4,7 +4,7 @@ Lightweight WordPress origin request protection and LiteSpeed cache-key normaliz
 
 ## Install
 
-Upload a ZIP containing the `news-cache-guard/` directory using **Plugins → Add New → Upload Plugin**, then visit **Settings → Newsroom Guard**. Keep Dry Run enabled until origin-limit thresholds are proven on staging. Read [INSTALL.md](INSTALL.md), [SECURITY.md](SECURITY.md), and [TESTING.md](TESTING.md) before enforcement.
+Upload a ZIP containing the `news-cache-guard/` directory using **Plugins → Add New → Upload Plugin**, then open the top-level **Newsroom Guard** menu. Keep Dry Run enabled until origin-limit thresholds are proven on staging. Read [INSTALL.md](INSTALL.md), [SECURITY.md](SECURITY.md), and [TESTING.md](TESTING.md) before enforcement.
 
 ## Early 3-per-minute search protection
 
@@ -34,15 +34,15 @@ If bots repeatedly request `Cache-Control: no-cache`, the opt-in **Ignore client
 
 ## Editorial & Publishing (v1.1.0-rc1, staged behind master OFF)
 
-A separate **Settings → Newsroom Guard → Editorial & Publishing** tab provides an independent master switch and group toggles for Publishing Audit, Security Intelligence, Two-Person Approval and Post-Publication Lock. The Master switch is **OFF by default** on both fresh installs and upgrades; all LiteSpeed cache, Cloudflare, Redis, request protection and worker policies remain independent.
+The integrated **Newsroom Guard → Module Manager** provides an independent master switch and group toggles for Publishing Audit, Security Intelligence, Two-Person Approval and Post-Publication Lock. The Master switch is **OFF by default** on both fresh installs and upgrades; all LiteSpeed cache, Cloudflare, Redis, request protection and worker policies remain independent.
 
 For an enabled approval workflow, Authors and Editors submit posts to a review queue. Editor-originated articles require approval by a different Editor. Published-article changes use pending revision proposals, while the four-hour post-publication lock blocks unauthorised direct edits and deletions. Administrator emergency publishing is audited. User ID 529 is exempt from **the lock only**, never from independent approval.
 
 This is a **release candidate on a draft pull request, not an approved production release**. The GitHub integration job tests real WordPress APIs against an ephemeral MariaDB instance, but must not substitute for Cloudways staging, Gutenberg browser, cache-purge and proxy testing. See [EDITORIAL-MODULE.md](EDITORIAL-MODULE.md).
 
-## Unified admin workspace (v1.2.0-rc1, staging release candidate)
+## Unified admin workspace (v1.2.0-rc2, staging release candidate)
 
-The new top-level **Newsroom Guard** menu provides ten operational sections: Overview, Cache & Performance, Bot Protection, Worker Guard, Editorial Approvals, Publishing Audit, Security Intelligence, Post Lock, Reports and Module Manager. It displays real WordPress/Redis data with an audit activity chart, and supports nonce- and role-protected module settings and bounded CSV exports. Public news pages load no extra CSS or JavaScript. Existing detailed Settings and Tools screens remain accessible.
+The new top-level **Newsroom Guard** menu provides ten operational sections: Overview, Cache & Performance, Bot Protection, Worker Guard, Editorial Approvals, Publishing Audit, Security Intelligence, Post Lock, Reports and Module Manager. It displays real WordPress/Redis data with an audit activity chart, and supports nonce- and role-protected module settings and bounded CSV exports. Public news pages load no extra CSS or JavaScript. Former advanced origin/proxy, scanner, XML-RPC and cache controls now reside inside **Module Manager → Advanced Controls**. Old Settings and duplicate Module Manager bookmarks redirect to their unified equivalents. Dedicated Worker Guard Tools diagnostics remain accessible.
 
 Review [ADMIN-WORKSPACE.md](ADMIN-WORKSPACE.md) for implemented features, scope limits, screenshot-inspired typography, module dependencies and staging acceptance. This implementation is in [draft PR #2](https://github.com/indigiti/wpncgx/pull/2) stacked on [editorial PR #1](https://github.com/indigiti/wpncgx/pull/1). Neither PR has been merged or validated on the actual Cloudways staging stack.
 

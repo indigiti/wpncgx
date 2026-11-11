@@ -27,6 +27,9 @@ function get_feed_link() {return 'https://example.invalid/feed/';}
 function wp_using_ext_object_cache() {return false;}
 function has_action($name) {return false;}
 function is_multisite() {return false;}
+function is_admin() {return false;}
+function wp_next_scheduled($hook) { ++$GLOBALS['perf_schedule_reads']; return false; }
+function wp_schedule_event(...$args) { ++$GLOBALS['perf_schedule_writes']; return true; }
 class WP_Post {
     public int $ID;
     public string $post_status;
@@ -44,6 +47,8 @@ require_once __DIR__.'/../includes/class-ncg-counter.php';
 require_once __DIR__.'/../includes/class-ncg-litespeed.php';
 require_once __DIR__.'/../includes/class-ncg-cache-environment.php';
 require_once __DIR__.'/../includes/class-ncg-purger.php';
+require_once __DIR__.'/../includes/class-ncg-editorial.php';
+require_once __DIR__.'/../includes/class-ncg-post-history.php';
 \NCG\Settings::boot();
 \NCG\Modules::boot();
 \NCG\Settings::get('origin_threshold');
@@ -101,4 +106,14 @@ $signals=\NCG\CacheEnvironment::signals();
 perf_check($signals['breeze']==='Breeze is listed as active','Breeze detection read-only and correctly labeled');
 perf_check(strpos($signals['varnish'],'Unverified')===0 &&
     strpos($signals['edge'],'Unverified')===0,'PHP hints do not assert Varnish/Cloudflare cache availability');
+$GLOBALS['perf_schedule_reads']=0;
+$GLOBALS['perf_schedule_writes']=0;
+$GLOBALS['perf_options'][1][\NCG\Editorial::OPTION]=['master'=>0,'audit'=>1];
+\NCG\Editorial::boot();
+perf_check($GLOBALS['perf_schedule_reads']===0 && $GLOBALS['perf_schedule_writes']===0,
+    'Disabled editorial master does not query or schedule maintenance on public requests');
+$GLOBALS['perf_options'][1]['ncg_post_history_db_version']='1';
+\NCG\PostHistory::boot();
+perf_check(!isset($GLOBALS['perf_hooks']['init']),
+    'Already installed Post History does not register migration checks on every request');
 echo "All rc7 performance behavior checks passed.\n";

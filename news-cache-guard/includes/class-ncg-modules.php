@@ -12,7 +12,7 @@ final class Modules {
     public const OPTION = 'ncg_module_switches';
 
     public static function defaults(): array {
-        return ['bot'=>1, 'worker'=>1, 'reports'=>1, 'media_uploads'=>0, 'category_creation'=>0, 'featured_alt'=>0];
+        return ['bot'=>1, 'worker'=>1, 'reports'=>1, 'media_uploads'=>0, 'category_creation'=>0, 'featured_alt'=>0, 'post_history'=>1];
     }
 
     public static function all(): array {

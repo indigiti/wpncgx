@@ -23,6 +23,7 @@ final class Plugin {
         GitHubUpdates::boot();
         WorkerGuard::boot();
         Editorial::boot();
+        PostHistory::boot();
         MediaPolicy::boot();
         if (is_admin()) { EditorialAdmin::boot(); Dashboard::boot(); }
         $this->guard->boot();
@@ -37,6 +38,7 @@ final class Plugin {
         Htaccess::sync();
         // Optional editorial storage is created on activation; enforcement remains off.
         Editorial::install();
+        PostHistory::install();
     }
 
     public static function deactivate(): void {

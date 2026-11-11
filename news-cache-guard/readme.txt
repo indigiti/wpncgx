@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc5
+Stable tag: 1.2.0-rc6
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,11 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc6 =
+* Track real staff creator, editing operator and publisher independently of public WordPress Author.
+* Add private Post History metabox and searchable Editorial Activity with module switch.
+* No changes to theme, author byline or front-end URLs.
 
 = 1.2.0-rc5 =
 * Make maximum upload size (1 KB–20 MB) configurable under Newsroom Guard Module Manager.

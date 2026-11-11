@@ -19,6 +19,7 @@ final class Dashboard {
             'workers'    => ['Worker Guard', 'dashicons-admin-tools'],
             'approvals'  => ['Editorial Approvals', 'dashicons-yes-alt'],
             'audit'      => ['Publishing Audit', 'dashicons-list-view'],
+            'activity'   => ['Editorial Activity', 'dashicons-clock'],
             'security'   => ['Security Intelligence', 'dashicons-warning'],
             'lock'       => ['Post Lock', 'dashicons-lock'],
             'reports'    => ['Reports', 'dashicons-chart-bar'],
@@ -161,6 +162,7 @@ final class Dashboard {
             case 'workers': self::workers(); break;
             case 'approvals': self::approvals(); break;
             case 'audit': self::audit(false); break;
+            case 'activity': PostHistory::admin_page(); break;
             case 'security': self::audit(true); break;
             case 'lock': self::lock(); break;
             case 'reports': self::reports(); break;
@@ -177,7 +179,8 @@ final class Dashboard {
             'bots'=>'Control requests reaching PHP, scanner activity and trusted IP handling.',
             'workers'=>'Conservative Action Scheduler and SEO workload guardrails.',
             'approvals'=>'Only independent reviewers can approve editorial publication.',
-            'audit'=>'Searchable accountability for publication and post changes.',
+            'audit'=>'Existing optional security audit and publishing evidence.',
+            'activity'=>'Search by staff member, reporter, post and publication date without changing WordPress authors.',
             'security'=>'Investigate elevated-risk events using recorded evidence.',
             'lock'=>'Prevent unauthorized edits after publication without blocking necessary corrections.',
             'reports'=>'Export bounded, traceable event records for responsible review.',
@@ -837,6 +840,8 @@ final class Dashboard {
         echo '<a class="nrg-text-link" href="' . esc_url(self::url('settings',['panel'=>'media'])) . '">Configure file types & maximum size →</a>';
         self::checkbox('category_creation','Administrators alone can create categories',Modules::on('category_creation'),
             'Prevents new WordPress categories through standard APIs without removing Editor role capabilities. Existing categories can still be assigned.');
+        self::checkbox('post_history','Track Post History and Editorial Activity',Modules::on('post_history'),
+            'Independent staff attribution for articles; does not enable editorial approvals or locking, and does not change public bylines.');
         self::checkbox('featured_alt','Auto-fill empty featured-image alt text',Modules::on('featured_alt'),
             'Uses the article title only when the shared image attachment has no alt text and the editor can edit the attachment. Existing alt text is never overwritten.');
         self::checkbox('master','Editorial master',!empty($e['master']),'OFF by default. Enables the selected editorial rules below.');
@@ -870,7 +875,7 @@ final class Dashboard {
         check_admin_referer('nrg_save_modules');
         $scope=sanitize_key(wp_unslash($_POST['switch']??'all'));
         $m=Modules::all();$e=Editorial::settings();
-        $keys=$scope==='worker' ? ['worker'] : ['bot','worker','reports','media_uploads','category_creation','featured_alt'];
+        $keys=$scope==='worker' ? ['worker'] : ['bot','worker','reports','media_uploads','category_creation','featured_alt','post_history'];
         foreach ($keys as $key) $m[$key]=!empty($_POST[$key]) ? 1 : 0;
         if ($scope==='all') {
             foreach (['master','audit','security','approvals','lock'] as $key) $e[$key]=!empty($_POST[$key])?1:0;

@@ -1,3 +1,10 @@
+# v1.2.0-rc6 — Post History and Editorial Activity
+
+- Independently capture post creation, editing, author changes, scheduling and publishing operator in a private WordPress admin journal.
+- Add per-post Post History and administrator Editorial Activity search without changing WordPress Author, themes, URLs, or existing publishing permissions.
+- Separate, non-enforcing module switch, isolated journal table, and regression/integration tests.
+- Rebuild the prerelease as rc6 rather than reusing the existing signed rc5 release.
+
 # Change history
 
 ## v1.0.6 — optional request-side no-cache reuse (2026-11-05)

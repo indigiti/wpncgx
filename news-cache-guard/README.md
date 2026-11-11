@@ -70,6 +70,10 @@ The rc7 performance milestone introduces **request-local settings and module cac
 
 Read-only admin diagnostics and safe early rejection of over-budget traffic to avoid unnecessary Redis unique-URL operations, with a Post History query optimization. Redis counter TTL safety is preserved. No public theme or author changes and no new page cache. See [RESOURCE-EFFICIENCY.md](RESOURCE-EFFICIENCY.md) for safety, release dependencies and live profiling criteria. **rc8 depends on the still-unmerged rc7 foundation and must not be deployed independently.**
 
+## Background Work Reliability (v1.2.0-rc9; staged on rc8)
+
+Worker Guard now has a bounded **read-only cron and queue snapshot** in **Tools → PM Worker Guard**. Only an administrator opening the page triggers these diagnostics. It does not count the whole queue, schedule maintenance, change cron or claim that Cloudways server cron has been verified. See [BACKGROUND-WORK-RELIABILITY.md](BACKGROUND-WORK-RELIABILITY.md). **rc9 depends on the unmerged rc7 and rc8 drafts and must not be deployed independently.**
+
 ## Future work and module roadmap
 
 The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

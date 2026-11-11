@@ -1,4 +1,4 @@
-=== News Cache Guard for LiteSpeed ===
+=== Newsroom Guard ===
 Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
@@ -6,7 +6,7 @@ Requires PHP: 7.4
 Stable tag: 1.1.0-rc1
 License: GPLv2 or later
 
-Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
+Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
 
 == Core design ==
 * LiteSpeed public cache remains the first line of defense. Cache HITs do not execute this plugin.
@@ -28,9 +28,9 @@ The plugin intentionally ships with a safe list of tracking parameters (utm*, gc
 
 == Recommended rollout ==
 1. Install LiteSpeed Cache for WordPress and a persistent Redis object cache.
-2. Install and activate News Cache Guard.
+2. Install and activate Newsroom Guard.
 3. Keep Dry Run enabled for initial observation.
-4. Verify .htaccess is writable and use Settings > News Cache Guard > Sync .htaccess.
+4. Verify .htaccess is writable and use Settings > Newsroom Guard > Sync .htaccess.
 5. Confirm a public article returns X-LiteSpeed-Cache: miss, then hit on refresh.
 6. Test UTM URLs and confirm they reuse the same LiteSpeed cache object.
 7. Review counters, then disable Dry Run to enforce limits.

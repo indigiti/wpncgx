@@ -18,6 +18,7 @@ final class WorkerGuard {
     private static bool $booted = false;
 
     public static function boot(): void {
+        if (class_exists(Modules::class, false) && !Modules::on('worker')) return;
         if (self::$booted) {
             return;
         }

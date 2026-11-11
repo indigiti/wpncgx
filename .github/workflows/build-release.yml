@@ -52,7 +52,10 @@ jobs:
           php news-cache-guard/tests/worker-guard.php phase2
           php news-cache-guard/tests/worker-guard.php forcecache
           php news-cache-guard/tests/editorial.php
+          php news-cache-guard/tests/post-history.php
           php news-cache-guard/tests/dashboard.php
+          php news-cache-guard/tests/performance.php
+          php news-cache-guard/tests/counter-efficiency.php
           php news-cache-guard/tests/branding.php
           php news-cache-guard/tests/github-updates.php
           php news-cache-guard/tests/media-policy.php
@@ -69,6 +72,8 @@ jobs:
           unzip -t dist/newsroom-guard-1.2.0-rc8.zip
           unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/news-cache-guard.php'
           unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-dashboard.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-counter.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-cache-environment.php'
           unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-editorial-workflow.php'
           unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/assets/newsroom-dashboard.css'
           unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/mu-plugins/wp-search-guard.php'

@@ -42,25 +42,9 @@ jobs:
           find news-cache-guard -name '*.php' -print0 | xargs -0 -n1 php -l
           bash -n news-cache-guard/tools/cache-probe.sh
 
-      - name: Run cache and editorial regression tests
+      - name: Run complete standalone release preflight
         shell: bash
-        run: |
-          set -euo pipefail
-          php news-cache-guard/tests/regression.php
-          php news-cache-guard/tests/mu-search-guard.php
-          php news-cache-guard/tests/worker-guard.php
-          php news-cache-guard/tests/worker-guard.php phase2
-          php news-cache-guard/tests/worker-guard.php forcecache
-          php news-cache-guard/tests/editorial.php
-          php news-cache-guard/tests/post-history.php
-          php news-cache-guard/tests/dashboard.php
-          php news-cache-guard/tests/performance.php
-          php news-cache-guard/tests/counter-efficiency.php
-          php news-cache-guard/tests/guard-budget.php dry
-          php news-cache-guard/tests/guard-budget.php enforce
-          php news-cache-guard/tests/branding.php
-          php news-cache-guard/tests/github-updates.php
-          php news-cache-guard/tests/media-policy.php
+        run: bash news-cache-guard/tools/release-preflight.sh
 
       - name: Package installable WordPress ZIP
         shell: bash

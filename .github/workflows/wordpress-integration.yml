@@ -139,6 +139,25 @@ jobs:
             if (!$count) WP_CLI::error("Approval audit event missing.");
             WP_CLI::success("Approved article, reviewer identity and audit event verified.");
           '
+      - name: Dashboard access, navigation, and real database rendering
+        run: |
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $admin = get_user_by("login","admin");
+            wp_set_current_user($admin->ID);
+            $_GET = ["page"=>"newsroom-guard","tab"=>"overview"];
+            ob_start(); \\NCG\\Dashboard::render(); $html=ob_get_clean();
+            if (strpos($html,"Newsroom Guard")===false ||
+                strpos($html,"Publishing activity")===false ||
+                strpos($html,"Module Manager")===false) {
+              WP_CLI::error("Overview dashboard did not render correctly.");
+            }
+            foreach (["cache","bots","workers","approvals","audit","security","lock","reports","settings"] as $tab) {
+              $_GET=["page"=>"newsroom-guard","tab"=>$tab];
+              ob_start(); \\NCG\\Dashboard::render(); $content=ob_get_clean();
+              if (strpos($content,"nrg-shell")===false) WP_CLI::error("Failed dashboard tab: ".$tab);
+            }
+            WP_CLI::success("All 10 live WordPress admin sections render.");
+          '
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

@@ -21,6 +21,8 @@ final class Plugin {
         $this->purger = new Purger();
         $this->admin = new Admin();
         WorkerGuard::boot();
+        Editorial::boot();
+        if (is_admin()) EditorialAdmin::boot();
         $this->guard->boot();
         $this->purger->boot();
         if (is_admin()) $this->admin->boot();
@@ -31,9 +33,12 @@ final class Plugin {
             add_option(Settings::OPTION, Settings::defaults(), '', false);
         }
         Htaccess::sync();
+        // Optional editorial storage is created on activation; enforcement remains off.
+        Editorial::install();
     }
 
     public static function deactivate(): void {
+        Editorial::deactivate();
         // Preserve settings and cache-key rules on deactivation to avoid surprise cache fragmentation.
         // Use the admin Query Collapse toggle + Sync button before deactivation if you want the marker removed.
     }

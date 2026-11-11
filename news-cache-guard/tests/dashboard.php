@@ -22,8 +22,9 @@ use NCG\Dashboard;
 
 check_nrg(Modules::on('bot') && Modules::on('worker') && Modules::on('reports'), 'Existing modules remain ON by default');
 check_nrg(!Modules::on('ai'), 'Future AI modules cannot be falsely enabled');
-check_nrg(Modules::sanitize([]) === ['bot'=>0,'worker'=>0,'reports'=>0], 'Missing checkboxes are OFF on explicit save');
-check_nrg(Modules::sanitize(['worker'=>1,'bot'=>0,'reports'=>1,'master'=>1]) === ['bot'=>0,'worker'=>1,'reports'=>1], 'Unsupported switches cannot be persisted');
+check_nrg(Modules::sanitize([]) === ['bot'=>0,'worker'=>0,'reports'=>0,'media_uploads'=>0,'category_creation'=>0,'featured_alt'=>0], 'Missing checkboxes are OFF on explicit save');
+check_nrg(Modules::sanitize(['worker'=>1,'bot'=>0,'reports'=>1,'master'=>1]) === ['bot'=>0,'worker'=>1,'reports'=>1,'media_uploads'=>0,'category_creation'=>0,'featured_alt'=>0], 'Unsupported switches cannot be persisted');
+check_nrg(!Modules::on('media_uploads') && !Modules::on('category_creation') && !Modules::on('featured_alt'), 'New media/content restrictions default OFF on upgrade');
 $GLOBALS['nrg_options'][Modules::OPTION] = ['worker'=>0];
 check_nrg(!Modules::on('worker') && Modules::on('bot'), 'A disabled Worker module does not disable Bot protection');
 

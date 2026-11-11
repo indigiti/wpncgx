@@ -110,6 +110,7 @@ final class Editorial {
             add_filter('pre_delete_post', [self::class, 'pre_delete'], 10, 2);
             add_filter('post_row_actions', [self::class, 'row_actions'], 10, 2);
         }
+        if (self::on('approvals') || self::on('lock')) EditorialHardening::boot();
         if (self::on('approvals')) EditorialWorkflow::boot();
         add_action('ncg_editorial_cleanup', [self::class, 'cleanup']);
         if (!wp_next_scheduled('ncg_editorial_cleanup')) wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'ncg_editorial_cleanup');
@@ -214,10 +215,16 @@ final class Editorial {
     }
     public static function transition(string $new, string $old, $p): void {
         if ($p->post_type !== 'post' || $new === $old) return;
+        // Transition callbacks may be invoked by legacy imports after a rejected
+        // publish attempt. Do not attribute a publication unless it still exists.
+        if ($new === 'publish' && get_post_status($p->ID) !== 'publish') return;
         if ($new === 'publish' && !metadata_exists('post', $p->ID, self::FIRST)) {
-            add_post_meta($p->ID, self::FIRST, current_time('mysql', true), true);
-            add_post_meta($p->ID, '_ncg_ed_first_publisher_id', get_current_user_id(), true);
-            add_post_meta($p->ID, '_ncg_ed_first_publisher_ip', self::ip(), true);
+            self::$applying = true;
+            try {
+                add_post_meta($p->ID, self::FIRST, current_time('mysql', true), true);
+                add_post_meta($p->ID, '_ncg_ed_first_publisher_id', get_current_user_id(), true);
+                add_post_meta($p->ID, '_ncg_ed_first_publisher_ip', self::ip(), true);
+            } finally { self::$applying = false; }
         }
         self::record('status_' . sanitize_key($new), (int)$p->ID, ['from'=>$old, 'to'=>$new]);
     }

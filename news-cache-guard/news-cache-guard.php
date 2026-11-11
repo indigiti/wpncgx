@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: News Cache Guard for LiteSpeed
- * Description: Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
+ * Plugin Name: Newsroom Guard
+ * Description: Newsroom publishing security, editorial approvals, audit intelligence, LiteSpeed caching and origin protection for WordPress.
  * Version: 1.1.0-rc1
  * Requires at least: 6.2
  * Requires PHP: 7.4

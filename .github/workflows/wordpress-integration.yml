@@ -96,6 +96,26 @@ jobs:
             if (!$posts) WP_CLI::error("Stale form approved the Author article.");
             WP_CLI::success("Stale approval rejected; request remains pending.");
           '
+      - name: Verify focused single-request review screen
+        run: |
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $admin=get_user_by("login","admin");
+            wp_set_current_user($admin->ID);
+            $posts=get_posts(["post_type"=>"post","post_status"=>"pending","s"=>"Author draft approval"]);
+            if (!$posts) WP_CLI::error("Review fixture missing");
+            global $wpdb;
+            $table=\NCG\Editorial::table("reviews");
+            $req=$wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE post_id=%d AND status=%s ORDER BY id DESC LIMIT 1",$posts[0]->ID,"pending"));
+            if (!$req) WP_CLI::error("Review row missing");
+            $_GET=["page"=>"newsroom-guard","tab"=>"approvals","review_id"=>$req->id];
+            ob_start(); \NCG\Dashboard::render(); $html=ob_get_clean();
+            if (strpos($html,"Submitted article content")===false ||
+                strpos($html,"Approve &amp; Publish")===false ||
+                strpos($html,"Back to pending reviews")===false) {
+              WP_CLI::error("Focused review page failed to show evidence and decisions");
+            }
+            WP_CLI::success("Single-request review details and actions render");
+          '
       - name: End-to-end approval decision by independent Editor
         run: |
           set -euo pipefail

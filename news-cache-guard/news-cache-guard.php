@@ -19,9 +19,11 @@ if (!defined('ABSPATH')) {
 define('NCG_VERSION', '1.1.0-rc1');
 define('NCG_FILE', __FILE__);
 define('NCG_DIR', plugin_dir_path(__FILE__));
+define('NCG_URL', plugin_dir_url(__FILE__));
 define('NCG_BASENAME', plugin_basename(__FILE__));
 
 require_once NCG_DIR . 'includes/class-ncg-settings.php';
+require_once NCG_DIR . 'includes/class-ncg-modules.php';
 require_once NCG_DIR . 'includes/class-ncg-ip.php';
 require_once NCG_DIR . 'includes/class-ncg-counter.php';
 require_once NCG_DIR . 'includes/class-ncg-litespeed.php';
@@ -35,6 +37,7 @@ require_once NCG_DIR . 'includes/class-ncg-editorial.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial-hardening.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial-workflow.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial-admin.php';
+require_once NCG_DIR . 'includes/class-ncg-dashboard.php';
 
 register_activation_hook(__FILE__, ['NCG\\Plugin', 'activate']);
 register_deactivation_hook(__FILE__, ['NCG\\Plugin', 'deactivate']);

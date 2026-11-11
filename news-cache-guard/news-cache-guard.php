@@ -30,6 +30,7 @@ require_once NCG_DIR . 'includes/class-ncg-media-policy.php';
 require_once NCG_DIR . 'includes/class-ncg-ip.php';
 require_once NCG_DIR . 'includes/class-ncg-counter.php';
 require_once NCG_DIR . 'includes/class-ncg-litespeed.php';
+require_once NCG_DIR . 'includes/class-ncg-cache-environment.php';
 require_once NCG_DIR . 'includes/class-ncg-htaccess.php';
 require_once NCG_DIR . 'includes/class-ncg-purger.php';
 require_once NCG_DIR . 'includes/class-ncg-guard.php';

@@ -1,3 +1,11 @@
+# v1.2.0-rc7 — Performance foundation (staging)
+
+- Request-local Settings and Modules caches, invalidated after WordPress option changes and keyed by blog for Multisite isolation.
+- Reuse validated tracking query-key patterns until settings are changed.
+- Use a single `wp_after_insert_post` hook to invalidate relevant LiteSpeed URLs after metadata/terms are saved; preserve direct `wp_publish_post()` cron and unpublication invalidation.
+- Introduce administrator-only, read-only cache environment signals without remote requests or cache configuration changes.
+- Add focused standalone and real WordPress/MariaDB regressions; performance gains remain unmeasured until staging profiling.
+
 # v1.2.0-rc6 — Post History and Editorial Activity
 
 - Independently capture post creation, editing, author changes, scheduling and publishing operator in a private WordPress admin journal.

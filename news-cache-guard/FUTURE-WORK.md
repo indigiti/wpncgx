@@ -2,7 +2,7 @@
 
 > **Status:** Planning only. None of the items below should be represented as implemented merely because they appear here.
 >
-> **Product:** One installable WordPress plugin, currently in the `news-cache-guard/` package (proposed display name: **Newsroom Guard**). Keep the existing plugin directory, options and `ncg_*` identifiers until a deliberately tested migration is approved.
+> **Product:** One installable WordPress plugin, currently in the `news-cache-guard/` package (display name: **Newsroom Guard**, formerly News Cache Guard). Keep the existing plugin directory, options and `ncg_*` identifiers until a deliberately tested migration is approved.
 >
 > **Current release baseline:** News Cache Guard v1.0.6 on `main`. Editorial Audit / Security / Approval / Post Lock are being developed in [draft PR #1](https://github.com/indigiti/wpncgx/pull/1) with the editorial master OFF by default. Automated CI is not a substitute for actual Cloudways staging acceptance. Do **not** merge, deploy enforcement or mark the release complete before the specified staging gates pass.
 
@@ -125,7 +125,7 @@
 - [ ] WordPress integration tests for Gutenberg, Classic Editor, REST, cron, WP-CLI, imports, Quick Edit, taxonomy, metadata and cache purge.
 - [ ] Accessibility, security, failure-injection, migration, load, and plugin-conflict acceptance tests.
 - [ ] Deployment/upgrade instructions compatible with the existing repository and DigiOps workflow once its release contract is verified.
-- [ ] External product/name and trademark clearance before public rebranding to **Newsroom Guard**.
+- [ ] External name availability and trademark clearance before public marketing of **Newsroom Guard**.
 
 ## Delivery tracking rules
 

@@ -62,6 +62,10 @@ The upload guard now supports an administrator-defined **1–20,480 KB** size li
 
 An independent, passive staff attribution log records the real WordPress account that creates, edits, publishes, or changes the public author of a news article. The existing theme and WordPress Author field are untouched. Editors with sufficient permissions see **Newsroom Guard — Post History** on each post; Administrators can search **Newsroom Guard → Editorial Activity**. Switch under **Module Manager**; approvals and locks are not enabled by this feature. See [POST-HISTORY.md](POST-HISTORY.md) for limitations, privacy and staging checks.
 
+## Performance foundation (v1.2.0-rc7, staging)
+
+The rc7 performance milestone introduces **request-local settings and module caches**, post-write-complete **single-pass LiteSpeed purge hooks**, and read-only **Cloudways/Breeze/LiteSpeed environment hints** in **Newsroom Guard → Cache & Performance**. It does **not** configure Varnish or Cloudflare, change public templates, or guarantee an origin/cache hit ratio. See [PERFORMANCE-FOUNDATION.md](PERFORMANCE-FOUNDATION.md) for test gates, known limitations and rollback guidance.
+
 ## Future work and module roadmap
 
 The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

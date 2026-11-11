@@ -24,7 +24,7 @@ nrg_navigation_assert(strpos($dashboard, "add_action('admin_init', [self::class,
     'Both legacy URLs redirect before the admin screen renders');
 nrg_navigation_assert(strpos($dashboard, "'news-cache-guard', 'newsroom-modules'") !== false,
     'Both legacy page identifiers are recognized');
-nrg_navigation_assert(strpos($dashboard, "self::url('settings', $args)") !== false,
+nrg_navigation_assert(strpos($dashboard, "self::url('settings', \$args)") !== false,
     'Legacy settings links map to the integrated Advanced Controls view');
 nrg_navigation_assert(strpos($dashboard, "['queue'=>'approvals', 'audit'=>'audit', 'alerts'=>'security']") !== false,
     'Existing editorial deep links map to the correct sections');

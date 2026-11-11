@@ -12,6 +12,7 @@ final class Settings {
     private static array $requestValues = [];
     private static array $requestLines = [];
     private static bool $booted = false;
+    private static int $revision = 0;
 
     public static function boot(): void {
         if (self::$booted) return;
@@ -25,7 +26,10 @@ final class Settings {
         if ($option !== self::OPTION) return;
         self::$requestValues = [];
         self::$requestLines = [];
+        ++self::$revision;
     }
+
+    public static function revision(): int { return self::$revision; }
 
     private static function blog_key(): int {
         return function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;

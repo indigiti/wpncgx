@@ -3,7 +3,6 @@
  * Real WordPress integration check: run after turning Bot and Worker modules OFF
  * in a fresh WP-CLI process. The default cache settings should remain unchanged.
  */
-declare(strict_types=1);
 if (!defined('ABSPATH')) exit;
 
 function check_nrg_wp(bool $pass,string $label): void {

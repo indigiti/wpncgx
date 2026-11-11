@@ -229,6 +229,11 @@ final class EditorialWorkflow {
         $table = Editorial::table('reviews');
         $r = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d", $id));
         if (!self::eligible($r, get_current_user_id())) wp_die('Independent reviewer required.');
+        $reviewed_hash = sanitize_text_field(wp_unslash($_POST['snapshot_hash'] ?? ''));
+        if (!preg_match('/^[a-f0-9]{64}$/', $reviewed_hash)
+            || !hash_equals((string)$r->base_hash, $reviewed_hash)) {
+            self::redirect('The article changed since you opened the queue. Reload and review the latest snapshot.');
+        }
         $p = get_post((int)$r->post_id);
         if (!$p || !hash_equals((string)$r->base_hash, self::fingerprint($p))) self::redirect('Article changed after submission; resubmit before approval.');
         $payload = json_decode((string)$r->payload, true);

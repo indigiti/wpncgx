@@ -21,6 +21,15 @@ final class EditorialHardening {
         add_action('transition_post_status', [self::class, 'mark_admin_schedule'], 5, 3);
     }
 
+    public static function lock_post_data(array $data, array $postarr, array $raw = [], bool $update = false): array {
+        if (($data['post_type'] ?? '') !== 'post' || empty($postarr['ID'])) return $data;
+        $post = get_post((int)$postarr['ID']);
+        if ($post && Editorial::locked($post) && !Editorial::bypass(get_current_user_id())) {
+            wp_die('Post-publication lock is active. Direct editing is not allowed.',
+                'Post Locked', ['response'=>403]);
+        }
+        return $data;
+    }
     public static function blocked(int $id, int $actor): bool {
         $p = get_post($id);
         if (!$p || $p->post_type !== 'post' || Editorial::bypass($actor)) return false;

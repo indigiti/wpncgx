@@ -42,6 +42,8 @@ verify(Editorial::map_meta_cap(['edit_posts'],'edit_post',1,[99]) === ['edit_pos
 $GLOBALS['ncg_ed_opts'][Editorial::OPTION]['master'] = 0;
 verify(!Editorial::locked(99), 'Master off disables lock without affecting posts');
 require_once __DIR__ . '/../includes/class-ncg-editorial-workflow.php';
+$GLOBALS['ncg_ed_opts'][Editorial::OPTION]['master'] = 1;
+$GLOBALS['ncg_ed_opts'][Editorial::OPTION]['approvals'] = 1;
 $actor = (object)['ID'=>2];
 $caps = \NCG\EditorialWorkflow::publish_cap(['publish_posts'=>true,'manage_options'=>false], [], [], $actor);
 verify($caps['publish_posts'] === false, 'Editor cannot directly publish while approval module is on');

@@ -57,7 +57,8 @@ final class PostHistory {
         if (!Modules::on('post_history')) return;
         // Upgrade does not invoke register_activation_hook. Install once, including
         // when the first post save happens before an administrator visits wp-admin.
-        add_action('init', [self::class, 'maybe_install'], 5);
+        // The migration hook is only needed until the versioned table exists.
+        if (!self::ready()) add_action('init', [self::class, 'maybe_install'], 5);
         add_action('wp_after_insert_post', [self::class, 'inserted'], 20, 4);
         add_action('post_updated', [self::class, 'updated'], 30, 3);
         add_action('transition_post_status', [self::class, 'transition'], 30, 3);

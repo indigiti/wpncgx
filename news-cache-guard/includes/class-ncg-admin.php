@@ -15,7 +15,7 @@ final class Admin {
     }
 
     public function menu(): void {
-        add_options_page('News Cache Guard', 'News Cache Guard', 'manage_options', 'news-cache-guard', [$this, 'render']);
+        add_options_page('Newsroom Guard', 'Newsroom Guard', 'manage_options', 'news-cache-guard', [$this, 'render']);
     }
 
     public function register(): void {
@@ -63,7 +63,7 @@ final class Admin {
         $probe = isset($_GET['ncg_cache_probe']) ? sanitize_key(wp_unslash($_GET['ncg_cache_probe'])) : '';
         ?>
         <div class="wrap">
-            <h1>News Cache Guard for LiteSpeed <small style="font-size:13px">v<?php echo esc_html(NCG_VERSION); ?></small></h1>
+            <h1>Newsroom Guard <small style="font-size:13px">v<?php echo esc_html(NCG_VERSION); ?></small></h1>
             <?php EditorialAdmin::tabs('cache'); ?>
             <?php if ($notice): ?><div class="notice notice-info"><p><?php echo esc_html($notice); ?></p></div><?php endif; ?>
             <?php if (get_option(Settings::OPTION, []) && is_array(get_option(Settings::OPTION, [])) && (get_option(Settings::OPTION, [])['default_policy'] ?? '') === 'force_cache'): ?><div class="notice notice-warning"><p><strong>Safety upgrade:</strong> a previously saved Force Cache policy has been converted to Safe Shared Cache at runtime. Public cache exclusions are never overridden.</p></div><?php endif; ?>
@@ -72,7 +72,7 @@ final class Admin {
             <?php if ($probe === 'failed'): ?><div class="notice notice-error"><p>Object cache atomic check failed. Do not enable strict origin limits until the Redis/object-cache backend is healthy.</p></div><?php endif; ?>
             <?php if (!$redis): ?><div class="notice notice-warning"><p><strong>Fail-open:</strong> no persistent object cache was detected. Rate limits are disabled so the plugin cannot block traffic due to missing Redis/object cache.</p></div><?php endif; ?>
             <?php if (!$muSearch): ?><div class="notice notice-warning"><p><strong>Search Guard MU not installed:</strong> the 3-search fallback obeys this plugin's Dry Run switch. For strict early enforcement independent of Dry Run, copy <code>news-cache-guard/mu-plugins/wp-search-guard.php</code> to <code>wp-content/mu-plugins/wp-search-guard.php</code>.</p></div><?php endif; ?>
-            <?php if ($muSearch && $s['dry_run']): ?><div class="notice notice-info"><p><strong>Search Guard MU is active:</strong> its 3-per-60-second limit enforces even while News Cache Guard Dry Run is on. All other limits continue to follow Dry Run.</p></div><?php endif; ?>
+            <?php if ($muSearch && $s['dry_run']): ?><div class="notice notice-info"><p><strong>Search Guard MU is active:</strong> its 3-per-60-second limit enforces even while Newsroom Guard Dry Run is on. All other limits continue to follow Dry Run.</p></div><?php endif; ?>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;max-width:1000px;margin:16px 0">
                 <?php $cards = [
                     ['LiteSpeed Cache', $ls ? 'DETECTED' : 'CHECK SERVER'],
@@ -173,7 +173,7 @@ final class Admin {
             </form>
 
             <h2>Generated LiteSpeed rules</h2>
-            <p>These rules are inserted in the root <code>.htaccess</code> between News Cache Guard markers.</p>
+            <p>These rules are inserted in the root <code>.htaccess</code> between the existing News Cache Guard compatibility markers.</p>
             <textarea readonly style="width:100%;max-width:1000px;height:180px;font-family:monospace"><?php echo esc_textarea(implode("\n", $rules)); ?></textarea>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:8px">
                 <input type="hidden" name="action" value="ncg_sync_htaccess"><?php wp_nonce_field('ncg_sync_htaccess'); ?>

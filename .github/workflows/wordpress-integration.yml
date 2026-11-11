@@ -90,9 +90,9 @@ jobs:
           '
           php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
             global $wpdb;
-            $table=\NCG\Editorial::table("reviews");
-            $n=(int)$wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status=\"pending\"");
-            if ($n < 1) WP_CLI::error("Stale form approved an article.");
+            $posts=get_posts(["post_type"=>"post","post_status"=>"pending",
+              "s"=>"Author draft approval","numberposts"=>5]);
+            if (!$posts) WP_CLI::error("Stale form approved the Author article.");
             WP_CLI::success("Stale approval rejected; request remains pending.");
           '
       - name: End-to-end approval decision by independent Editor

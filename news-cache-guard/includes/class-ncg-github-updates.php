@@ -150,8 +150,6 @@ final class GitHubUpdates {
             'package' => $candidate['package'],
             'requires' => '6.2',
             'requires_php' => '7.4',
-            // This plugin does not silently opt in to auto-updates.
-            'autoupdate' => false,
         ];
     }
 

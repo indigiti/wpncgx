@@ -32,6 +32,7 @@ require_once NCG_DIR . 'includes/class-ncg-admin.php';
 require_once NCG_DIR . 'includes/class-ncg-worker-guard.php';
 require_once NCG_DIR . 'includes/class-ncg-plugin.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial.php';
+require_once NCG_DIR . 'includes/class-ncg-editorial-hardening.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial-workflow.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial-admin.php';
 

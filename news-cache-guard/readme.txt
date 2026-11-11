@@ -65,7 +65,6 @@ More-specific CIDRs win.
 * Add optional administrator-only category creation without modifying saved Editor role capabilities.
 * Add optional featured-image alt fallback for empty metadata with post and attachment permission checks.
 * All policies OFF by default; document MediaFlow and newspaper PDF ingestion compatibility.
-== Changelog ==
 
 = 1.2.0-rc2 =
 * Single Newsroom Guard administration interface, with advanced controls fully moved into the dashboard.

@@ -115,7 +115,7 @@ final class EditorialAdmin {
             if (EditorialWorkflow::eligible($r, get_current_user_id())) {
                 echo '<details><summary>Review snapshot</summary><div style="max-width:420px;max-height:250px;overflow:auto;white-space:pre-wrap;border:1px solid #ddd;padding:8px;margin:8px 0">' .
                     esc_html(wp_json_encode(json_decode($r->payload, true), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)) . '</div>';
-                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="ncg_ed_review"><input type="hidden" name="review_id" value="' . (int)$r->id . '">';
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="ncg_ed_review"><input type="hidden" name="review_id" value="' . (int)$r->id . '"><input type="hidden" name="snapshot_hash" value="' . esc_attr($r->base_hash) . '">';
                 wp_nonce_field('ncg_ed_review');
                 echo '<textarea name="note" rows="2" style="width:100%" placeholder="Reason for rejection or requested changes"></textarea>';
                 echo '<button name="decision" value="approve" class="button button-primary">Approve & Publish</button> ';

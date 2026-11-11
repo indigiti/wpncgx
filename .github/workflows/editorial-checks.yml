@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - feature/editorial-controls
+      - feature/newsroom-dashboard
 
 jobs:
   php-lint-and-regression:
@@ -28,5 +29,7 @@ jobs:
           php news-cache-guard/tests/worker-guard.php
       - name: Editorial settings and capability unit checks
         run: php news-cache-guard/tests/editorial.php
+      - name: Newsroom Guard dashboard and module regression
+        run: php news-cache-guard/tests/dashboard.php
       - name: Newsroom Guard display name and upgrade compatibility
         run: php news-cache-guard/tests/branding.php

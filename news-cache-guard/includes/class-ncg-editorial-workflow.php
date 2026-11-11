@@ -169,8 +169,8 @@ final class EditorialWorkflow {
     }
     private static function redirect(string $message, string $view = 'queue'): void {
         if (current_user_can('manage_options')) {
-            $url = add_query_arg(['page'=>'news-cache-guard','ncg_tab'=>'editorial',
-                'view'=>$view,'ncg_ed_notice'=>$message], admin_url('options-general.php'));
+            $url = add_query_arg(['page'=>'newsroom-guard','tab'=>'approvals',
+                'nrg_review_notice'=>$message], admin_url('admin.php'));
         } elseif (current_user_can('edit_others_posts')) {
             $url = add_query_arg(['page'=>'ncg-editorial-reviews','ncg_ed_notice'=>$message],
                 admin_url('edit.php'));

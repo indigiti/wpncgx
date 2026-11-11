@@ -18,13 +18,17 @@ final class EditorialAdmin {
     }
     public static function render_reviews(): void {
         if (!current_user_can('edit_others_posts')) wp_die('Forbidden.');
-        echo '<div class="wrap"><h1>Editorial Approval Queue</h1>';
-        self::queue();
+        echo '<div class="wrap nrg-app"><h1>Editorial Approval Queue</h1>';
+        if (!empty($_GET['ncg_ed_notice'])) echo '<div class="nrg-note nrg-note-success">' .
+            esc_html(sanitize_text_field(wp_unslash($_GET['ncg_ed_notice']))) . '</div>';
+        $id = absint($_GET['review_id'] ?? 0);
+        if ($id) self::review_detail($id);
+        else self::queue();
         echo '</div>';
     }
     public static function render_proposal(): void {
         if (!current_user_can('edit_posts')) wp_die('Forbidden.');
-        echo '<div class="wrap">';
+        echo '<div class="wrap nrg-app">';
         self::proposal();
         echo '</div>';
     }
@@ -98,34 +102,103 @@ final class EditorialAdmin {
         echo '</form><hr><h2>Operational safeguards</h2><p>Turning a group OFF prevents new enforcement or events, but preserves existing audit records and review requests. Turning Approvals OFF does not automatically publish pending articles. The master switch never changes cache, LiteSpeed or Redis settings.</p>';
         echo '<p><strong>Separation of duties:</strong> Administrators retain an emergency publication exception; this is audited when Audit Logging is on. WordPress administrators can also deactivate plugins, so external governance is required for absolute enforcement.</p>';
     }
-    private static function queue(): void {
-        if (!Editorial::on('approvals')) { echo '<p>Enable Master and Approval group to process requests.</p>'; return; }
+    public static function queue(): void {
+        if (!Editorial::on('approvals')) {
+            echo '<p>Enable Editorial Master and Approvals in Module Manager to review posts.</p>';
+            return;
+        }
         global $wpdb;
         $table = Editorial::table('reviews');
-        $records = $wpdb->get_results("SELECT * FROM $table WHERE status='pending' ORDER BY created_utc ASC LIMIT 100");
-        echo '<h2>Pending Editorial Review</h2>';
-        if (!$records) { echo '<p>No pending requests.</p>'; return; }
-        echo '<table class="widefat striped"><thead><tr><th>Article</th><th>Submitted by</th><th>Type</th><th>Requested</th><th>Decision</th></tr></thead><tbody>';
-        foreach ($records as $r) {
+        $page = max(1, min(10000, absint($_GET['review_page'] ?? 1)));
+        $size = 25;
+        $offset = ($page-1)*$size;
+        $records = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table WHERE status=%s ORDER BY created_utc ASC, id ASC LIMIT %d OFFSET %d",
+            'pending', $size+1, $offset));
+        $more = count((array)$records) > $size;
+        echo '<div class="nrg-queue-head"><h2>Pending Editorial Review</h2><p>Oldest first · 25 requests per page · decision snapshots are version-bound.</p></div>';
+        if (!$records) {
+            echo '<div class="nrg-empty">There are no pending articles on this page.</div>';
+            return;
+        }
+        echo '<div class="nrg-table-wrap"><table class="widefat nrg-table"><thead><tr><th>Article</th><th>Submitted by</th><th>Type</th><th>Requested UTC</th><th>Independent review</th></tr></thead><tbody>';
+        foreach (array_slice($records, 0, $size) as $r) {
             $p = get_post((int)$r->post_id);
             if (!$p) continue;
-            echo '<tr><td><strong>' . esc_html(get_the_title($p)) . '</strong><br><small>Post #' . (int)$p->ID .
-                ' · ' . esc_html($r->policy) . '</small></td><td>' . esc_html(get_the_author_meta('display_name', (int)$r->submitter_id)) .
-                '</td><td>' . esc_html($r->kind) . '</td><td>' . esc_html($r->created_utc) . ' UTC</td><td>';
-            if (EditorialWorkflow::eligible($r, get_current_user_id())) {
-                echo '<details><summary>Review snapshot</summary><div style="max-width:420px;max-height:250px;overflow:auto;white-space:pre-wrap;border:1px solid #ddd;padding:8px;margin:8px 0">' .
-                    esc_html(wp_json_encode(json_decode($r->payload, true), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)) . '</div>';
-                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="ncg_ed_review"><input type="hidden" name="review_id" value="' . (int)$r->id . '"><input type="hidden" name="snapshot_hash" value="' . esc_attr($r->base_hash) . '">';
-                wp_nonce_field('ncg_ed_review');
-                echo '<textarea name="note" rows="2" style="width:100%" placeholder="Reason for rejection or requested changes"></textarea>';
-                echo '<button name="decision" value="approve" class="button button-primary">Approve & Publish</button> ';
-                echo '<button name="decision" value="changes" class="button">Request Changes</button> ';
-                echo '<button name="decision" value="reject" class="button">Reject</button></form></details>';
-            } else echo '<span style="color:#a32d2d">Independent reviewer required</span>';
+            $can = EditorialWorkflow::eligible($r, get_current_user_id());
+            echo '<tr><td><strong>' . esc_html(get_the_title($p)) .
+                '</strong><br><small>Post #' . (int)$p->ID . ' · ' . esc_html($r->policy) .
+                '</small></td><td>' . esc_html(get_the_author_meta('display_name', (int)$r->submitter_id)) .
+                '</td><td>' . esc_html(ucfirst($r->kind)) . '</td><td>' . esc_html($r->created_utc) . '</td><td>';
+            if ($can) {
+                $review_url = current_user_can('manage_options') && class_exists(Dashboard::class, false)
+                    ? Dashboard::url('approvals', ['review_id'=>(int)$r->id])
+                    : add_query_arg(['page'=>'ncg-editorial-reviews','review_id'=>(int)$r->id], admin_url('edit.php'));
+                echo '<a class="button button-primary" href="' . esc_url($review_url) . '">Open review</a>';
+            } else {
+                echo '<span class="nrg-chip nrg-chip-danger">Independent reviewer required</span>';
+            }
             echo '</td></tr>';
         }
-        echo '</tbody></table>';
+        echo '</tbody></table></div><div class="nrg-pagination">';
+        if ($page > 1) echo '<a class="button" href="' . esc_url(add_query_arg('review_page', $page-1)) . '">Previous</a>';
+        echo '<span>Page ' . $page . '</span>';
+        if ($more) echo '<a class="button" href="' . esc_url(add_query_arg('review_page', $page+1)) . '">Next</a>';
+        echo '</div>';
     }
+    public static function review_detail(int $id): void {
+        if (!current_user_can('edit_others_posts') || !Editorial::on('approvals')) {
+            echo '<div class="nrg-note nrg-note-warning">Independent editorial review is not available.</div>';
+            return;
+        }
+        global $wpdb;
+        $table = Editorial::table('reviews');
+        $req = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id=%d AND status=%s", $id, 'pending'));
+        if (!$req || !EditorialWorkflow::eligible($req, get_current_user_id())) {
+            echo '<div class="nrg-note nrg-note-warning">Request not found or you cannot review this submission.</div>';
+            return;
+        }
+        $post=get_post((int)$req->post_id);
+        $submitted=json_decode((string)$req->payload, true);
+        if (!$post || !is_array($submitted)) {
+            echo '<div class="nrg-note nrg-note-warning">The submitted article snapshot is unavailable.</div>';
+            return;
+        }
+        $back=current_user_can('manage_options') && class_exists(Dashboard::class,false)
+            ? Dashboard::url('approvals')
+            : admin_url('edit.php?page=ncg-editorial-reviews');
+        echo '<p><a class="nrg-text-link" href="' . esc_url($back) . '">← Back to pending reviews</a></p>';
+        echo '<div class="nrg-queue-head"><h2>Independent article review</h2>';
+        echo '<p>Review ID #' . (int)$req->id . ' · ' . esc_html($req->created_utc) . ' UTC</p></div>';
+        echo '<div class="nrg-system-list">';
+        foreach ([
+            ['Submitted by',get_the_author_meta('display_name',(int)$req->submitter_id)],
+            ['Article ID',(string)$post->ID],
+            ['Review policy',(string)$req->policy],
+            ['Submission type',(string)$req->kind],
+        ] as $pair) echo '<div><span>' . esc_html($pair[0]) . '</span><strong>' . esc_html((string)$pair[1]) . '</strong></div>';
+        echo '</div><div class="nrg-review-inspection">';
+        echo '<h3>Submitted headline</h3><p>' . esc_html((string)($submitted['title'] ?? $post->post_title)) . '</p>';
+        if ($req->kind === 'revision') {
+            echo '<h3>Current live headline</h3><p>' . esc_html((string)$post->post_title) . '</p>';
+        }
+        echo '<h3>Submitted article content</h3><pre>' .
+            esc_html((string)($submitted['content'] ?? $post->post_content)) . '</pre>';
+        echo '<h3>Other submitted fields</h3><pre>' .
+            esc_html(wp_json_encode(array_diff_key($submitted, ['content'=>true]), JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)) .
+            '</pre></div>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="ncg_ed_review">';
+        echo '<input type="hidden" name="review_id" value="' . (int)$req->id . '">';
+        echo '<input type="hidden" name="snapshot_hash" value="' . esc_attr($req->base_hash) . '">';
+        wp_nonce_field('ncg_ed_review');
+        echo '<label class="nrg-review-note">Review note<textarea name="note" rows="3" placeholder="Required for rejection or requested changes"></textarea></label>';
+        echo '<div class="nrg-review-actions"><button name="decision" value="approve" class="button button-primary">Approve &amp; Publish</button> ';
+        echo '<button name="decision" value="changes" class="button">Request Changes</button> ';
+        echo '<button name="decision" value="reject" class="button">Reject</button></div></form>';
+    }
+
     private static function proposal(): void {
         if (!Editorial::on('approvals')) { echo '<p>Approval workflow is disabled.</p>'; return; }
         $id = absint($_GET['post'] ?? 0);

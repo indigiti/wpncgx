@@ -4,7 +4,7 @@
 >
 > **Product:** One installable WordPress plugin, currently in the `news-cache-guard/` package (display name: **Newsroom Guard**, formerly News Cache Guard). Keep the existing plugin directory, options and `ncg_*` identifiers until a deliberately tested migration is approved.
 >
-> **Current release baseline:** News Cache Guard v1.0.6 on `main`. Editorial Audit / Security / Approval / Post Lock are being developed in [draft PR #1](https://github.com/indigiti/wpncgx/pull/1) with the editorial master OFF by default. Automated CI is not a substitute for actual Cloudways staging acceptance. Do **not** merge, deploy enforcement or mark the release complete before the specified staging gates pass.
+> **Current release baseline:** News Cache Guard v1.0.6 on `main`. Editorial Audit / Security / Approval / Post Lock are being developed in [draft PR #1](https://github.com/indigiti/wpncgx/pull/1). A responsive ten-section admin workspace and independent Bot/Worker/Reports switches are under [draft PR #2](https://github.com/indigiti/wpncgx/pull/2), stacked on PR #1. Both PRs remain unmerged pending Cloudways staging, and the editorial master remains OFF by default. Automated CI is not a substitute for actual Cloudways staging acceptance. Do **not** merge, deploy enforcement or mark the release complete before the specified staging gates pass.
 
 ## Roadmap principles
 

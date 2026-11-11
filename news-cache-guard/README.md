@@ -40,6 +40,12 @@ For an enabled approval workflow, Authors and Editors submit posts to a review q
 
 This is a **release candidate on a draft pull request, not an approved production release**. The GitHub integration job tests real WordPress APIs against an ephemeral MariaDB instance, but must not substitute for Cloudways staging, Gutenberg browser, cache-purge and proxy testing. See [EDITORIAL-MODULE.md](EDITORIAL-MODULE.md).
 
+## Unified admin workspace (v1.2.0-rc1, staging release candidate)
+
+The new top-level **Newsroom Guard** menu provides ten operational sections: Overview, Cache & Performance, Bot Protection, Worker Guard, Editorial Approvals, Publishing Audit, Security Intelligence, Post Lock, Reports and Module Manager. It displays real WordPress/Redis data with an audit activity chart, and supports nonce- and role-protected module settings and bounded CSV exports. Public news pages load no extra CSS or JavaScript. Existing detailed Settings and Tools screens remain accessible.
+
+Review [ADMIN-WORKSPACE.md](ADMIN-WORKSPACE.md) for implemented features, scope limits, screenshot-inspired typography, module dependencies and staging acceptance. This implementation is in [draft PR #2](https://github.com/indigiti/wpncgx/pull/2) stacked on [editorial PR #1](https://github.com/indigiti/wpncgx/pull/1). Neither PR has been merged or validated on the actual Cloudways staging stack.
+
 ## Future work and module roadmap
 
 The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

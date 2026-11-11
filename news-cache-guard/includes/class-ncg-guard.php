@@ -175,7 +175,8 @@ final class Guard {
     }
 
     private function enabled(): bool {
-        return (int)Settings::get('enabled', 1) === 1;
+        return (int)Settings::get('enabled', 1) === 1
+            && (!class_exists(Modules::class, false) || Modules::on('bot'));
     }
 
     private function init_identity(): bool {

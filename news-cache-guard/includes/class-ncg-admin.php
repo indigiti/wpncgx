@@ -64,6 +64,7 @@ final class Admin {
         ?>
         <div class="wrap">
             <h1>Newsroom Guard <small style="font-size:13px">v<?php echo esc_html(NCG_VERSION); ?></small></h1>
+            <p><a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=newsroom-guard')); ?>">Open Newsroom Guard dashboard</a></p>
             <?php EditorialAdmin::tabs('cache'); ?>
             <?php if ($notice): ?><div class="notice notice-info"><p><?php echo esc_html($notice); ?></p></div><?php endif; ?>
             <?php if (get_option(Settings::OPTION, []) && is_array(get_option(Settings::OPTION, [])) && (get_option(Settings::OPTION, [])['default_policy'] ?? '') === 'force_cache'): ?><div class="notice notice-warning"><p><strong>Safety upgrade:</strong> a previously saved Force Cache policy has been converted to Safe Shared Cache at runtime. Public cache exclusions are never overridden.</p></div><?php endif; ?>

@@ -8,6 +8,7 @@
  * Author: DCN
  * License: GPL-2.0-or-later
  * Text Domain: news-cache-guard
+ * Update URI: https://github.com/indigiti/wpncgx
  */
 
 declare(strict_types=1);
@@ -24,6 +25,7 @@ define('NCG_BASENAME', plugin_basename(__FILE__));
 
 require_once NCG_DIR . 'includes/class-ncg-settings.php';
 require_once NCG_DIR . 'includes/class-ncg-modules.php';
+require_once NCG_DIR . 'includes/class-ncg-github-updates.php';
 require_once NCG_DIR . 'includes/class-ncg-media-policy.php';
 require_once NCG_DIR . 'includes/class-ncg-ip.php';
 require_once NCG_DIR . 'includes/class-ncg-counter.php';

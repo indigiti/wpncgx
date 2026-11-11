@@ -681,6 +681,13 @@ final class Dashboard {
         self::checkbox('bot','Bot Protection',Modules::on('bot'),'Ordinary WordPress request limits; independently installed MU Search Guard is not affected.');
         self::checkbox('worker','Worker Guard',Modules::on('worker'),'Action Scheduler and sitemap caps; default ON for existing installs.');
         self::checkbox('reports','Reports and CSV exports',Modules::on('reports'),'Administrator-only reporting, no public-page cost.');
+        echo '<div class="nrg-divider"></div><h3>Media and content policies</h3>';
+        self::checkbox('media_uploads','JPG/JPEG and WebP only · 500 KB maximum',Modules::on('media_uploads'),
+            'Strict rule for ALL new uploads, including REST and sideloads. Blocks PNG, GIF, PDFs, newspaper editions and large source images. Existing files remain untouched.');
+        self::checkbox('category_creation','Administrators alone can create categories',Modules::on('category_creation'),
+            'Prevents new WordPress categories through standard APIs without removing Editor role capabilities. Existing categories can still be assigned.');
+        self::checkbox('featured_alt','Auto-fill empty featured-image alt text',Modules::on('featured_alt'),
+            'Uses the article title only when the shared image attachment has no alt text and the editor can edit the attachment. Existing alt text is never overwritten.');
         self::checkbox('master','Editorial master',!empty($e['master']),'OFF by default. Enables the selected editorial rules below.');
         self::checkbox('audit','Publishing Audit',!empty($e['audit']),'Records publication changes in dedicated tables.');
         self::checkbox('security','Security Intelligence',!empty($e['security']),'Requires Editorial Master and Publishing Audit to record alerts.');
@@ -710,7 +717,7 @@ final class Dashboard {
         check_admin_referer('nrg_save_modules');
         $scope=sanitize_key(wp_unslash($_POST['switch']??'all'));
         $m=Modules::all();$e=Editorial::settings();
-        $keys=$scope==='worker' ? ['worker'] : ['bot','worker','reports'];
+        $keys=$scope==='worker' ? ['worker'] : ['bot','worker','reports','media_uploads','category_creation','featured_alt'];
         foreach ($keys as $key) $m[$key]=!empty($_POST[$key]) ? 1 : 0;
         if ($scope==='all') {
             foreach (['master','audit','security','approvals','lock'] as $key) $e[$key]=!empty($_POST[$key])?1:0;

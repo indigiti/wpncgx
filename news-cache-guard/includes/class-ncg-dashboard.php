@@ -34,6 +34,7 @@ final class Dashboard {
         add_action('admin_post_nrg_save_core', [self::class, 'save_core']);
         add_action('admin_post_nrg_save_lock', [self::class, 'save_lock']);
         add_action('admin_post_nrg_save_advanced', [self::class, 'save_advanced']);
+        add_action('admin_post_nrg_save_media_policy', [self::class, 'save_media_policy']);
         add_action('admin_post_nrg_export_events', [self::class, 'export_events']);
     }
 
@@ -146,6 +147,8 @@ final class Dashboard {
                 'confirm_required'=>'Enable editorial enforcement only after confirming your staging checks.',
                 'github_saved'=>'GitHub update channel saved. Recheck releases to refresh WordPress update status.',
                 'github_checked'=>'WordPress GitHub release update check completed.',
+                'media_saved'=>'Media upload file types and size limit saved. The separate upload policy toggle is unchanged.',
+                'media_invalid'=>'Choose at least one supported file type and a valid limit from 1 to 20,480 KB.',
             ];
             if (isset($messages[$message])) self::note($messages[$message], $message === 'saved' || $message === 'module_saved' ? 'success' : 'warning');
         }
@@ -749,6 +752,62 @@ final class Dashboard {
         self::card_close();
     }
 
+    private static function media_policy(): void {
+        $config=MediaPolicy::settings();
+        echo '<p><a class="nrg-text-link" href="' . esc_url(self::url('settings')) .
+            '">← Back to Module Manager</a></p>';
+        self::card_open('Allowed file types', 'Select the permitted formats before enabling the upload restriction');
+        self::note('If enabled, this applies to all new WordPress uploads and sideloads, including administrator uploads and automated e-paper imports. Older attachments are unaffected.', 'warning');
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="nrg_save_media_policy">';
+        wp_nonce_field('nrg_save_media_policy');
+        echo '<fieldset class="nrg-media-types"><legend>Permitted formats</legend>';
+        foreach (MediaPolicy::supported_types() as $key=>$row) {
+            echo '<label><input type="checkbox" name="media_types[]" value="' . esc_attr($key) . '" ' .
+                checked(in_array($key,$config['types'],true),true,false) . '><span>' .
+                esc_html($row['label']) . '</span></label>';
+        }
+        echo '</fieldset>';
+        self::number('max_kb','Maximum file size (KB)',(int)$config['max_kb'],
+            MediaPolicy::MIN_KB,MediaPolicy::MAX_KB,'1 KB = 1,024 bytes. Default 500 KB; maximum configurable 20 MB. Server upload limits may be lower.');
+        echo '<p class="nrg-footnote">Effective configuration: ' . esc_html(MediaPolicy::error_message()) . '</p>';
+        echo '<p class="nrg-footnote"><strong>Compatibility:</strong> MediaFlow is a separate plugin and can resize images after upload. Allowing a larger source image can improve its results. Enable PDF explicitly if this WordPress installation publishes e-paper PDFs.</p>';
+        echo '<p class="nrg-footnote">Disallowed SVG, HTML, scripts, and executable files cannot be enabled. File extensions are checked against actual file content; changing settings never processes historical uploads.</p>';
+        self::action_form('nrg_save_media_policy','Save upload policy');
+        echo '</form>';self::card_close();
+        self::card_open('Activation status','Configuration is independent from the upload enforcement switch');
+        echo '<p>Upload enforcement is currently <strong>' . (Modules::on('media_uploads') ? 'ON' : 'OFF') .
+            '</strong>. Return to Module Manager to change enforcement; saving formats or the size limit does not turn the policy on automatically.</p>';
+        echo '<a class="nrg-text-link" href="' . esc_url(self::url('settings')) .
+            '">Manage upload enforcement →</a>';
+        self::card_close();
+    }
+
+    public static function save_media_policy(): void {
+        if (!current_user_can('manage_options')) wp_die('Forbidden',403);
+        check_admin_referer('nrg_save_media_policy');
+        $max=isset($_POST['max_kb']) && is_scalar($_POST['max_kb'])
+            ? (string)wp_unslash($_POST['max_kb']) : '';
+        $raw=$_POST['media_types']??[];
+        if (!preg_match('/^[0-9]{1,5}$/D',$max) || (int)$max<MediaPolicy::MIN_KB ||
+            (int)$max>MediaPolicy::MAX_KB || !is_array($raw)) {
+            self::redirect('settings','media_invalid',['panel'=>'media']);
+        }
+        $allowed=array_keys(MediaPolicy::supported_types());
+        $types=[];
+        foreach ($raw as $key) {
+            if (is_string($key) && in_array($key,$allowed,true) && !in_array($key,$types,true)) {
+                $types[]=$key;
+            }
+        }
+        if (!$types) self::redirect('settings','media_invalid',['panel'=>'media']);
+        update_option(MediaPolicy::OPTION,MediaPolicy::clean([
+            'max_kb'=>(int)$max,
+            'types'=>$types,
+        ]),false);
+        self::redirect('settings','media_saved',['panel'=>'media']);
+    }
+
     private static function settings(): void {
         if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'advanced') {
             self::advanced();
@@ -756,6 +815,10 @@ final class Dashboard {
         }
         if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'updates') {
             self::github_updates();
+            return;
+        }
+        if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'media') {
+            self::media_policy();
             return;
         }
         $e=Editorial::settings();
@@ -767,8 +830,11 @@ final class Dashboard {
         self::checkbox('worker','Worker Guard',Modules::on('worker'),'Action Scheduler and sitemap caps; default ON for existing installs.');
         self::checkbox('reports','Reports and CSV exports',Modules::on('reports'),'Administrator-only reporting, no public-page cost.');
         echo '<div class="nrg-divider"></div><h3>Media and content policies</h3>';
-        self::checkbox('media_uploads','JPG/JPEG and WebP only · 500 KB maximum',Modules::on('media_uploads'),
-            'Strict rule for ALL new uploads, including REST and sideloads. Blocks PNG, GIF, PDFs, newspaper editions and large source images. Existing files remain untouched.');
+        $media = MediaPolicy::settings();
+        self::checkbox('media_uploads','Restrict uploaded file types and size',Modules::on('media_uploads'),
+            'Uses the configured allowlist and maximum size for WordPress uploads and sideloads. OFF by default; does not modify existing media.');
+        echo '<p class="nrg-footnote">Current upload policy: ' . esc_html(MediaPolicy::error_message()) . '</p>';
+        echo '<a class="nrg-text-link" href="' . esc_url(self::url('settings',['panel'=>'media'])) . '">Configure file types & maximum size →</a>';
         self::checkbox('category_creation','Administrators alone can create categories',Modules::on('category_creation'),
             'Prevents new WordPress categories through standard APIs without removing Editor role capabilities. Existing categories can still be assigned.');
         self::checkbox('featured_alt','Auto-fill empty featured-image alt text',Modules::on('featured_alt'),

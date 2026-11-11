@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc4
+Stable tag: 1.2.0-rc5
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,13 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc5 =
+* Make maximum upload size (1 KB–20 MB) configurable under Newsroom Guard Module Manager.
+* Allow optional JPG/JPEG, WebP, PNG, GIF and PDF with real MIME/content validation.
+* Keep existing 500 KB JPEG/WebP defaults and independent upload policy OFF/ON control.
+* Keep MediaFlow as a separate plugin; server-side PHP upload limits remain authoritative.
+
 
 = 1.2.0-rc4 =
 * Enable WordPress-native GitHub Releases update detection through the Update URI header.

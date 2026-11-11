@@ -238,3 +238,16 @@
 }
 .nrg-app .nrg-update-choices label:has(input:focus-visible){outline:2px solid #d42e61;outline-offset:2px}
 .nrg-app .nrg-panel>p:not(:first-child){margin-top:12px}
+
+
+/* Configurable uploads — readable and accessible without a secondary admin menu. */
+.nrg-app .nrg-media-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border:0;padding:0;margin:0 0 18px}
+.nrg-app .nrg-media-types legend{grid-column:1/-1;font-size:12px;font-weight:750;margin-bottom:10px;color:#29252a}
+.nrg-app .nrg-media-types label{display:flex;align-items:center;gap:10px;
+  border:1px solid #eee6e9;border-radius:12px;padding:13px 15px;cursor:pointer;
+  font-size:12px;font-weight:650;background:#fff;color:#322d33;min-width:0}
+.nrg-app .nrg-media-types label:hover{background:#fff9fb;border-color:#e1b4c2}
+.nrg-app .nrg-media-types label:has(input:checked){background:#fff4f8;border-color:#db7496}
+.nrg-app .nrg-media-types input{margin:0;accent-color:#d42e61}
+.nrg-app .nrg-media-types label:has(input:focus-visible){outline:2px solid #d42e61;outline-offset:2px}
+@media(max-width:540px){.nrg-app .nrg-media-types{grid-template-columns:1fr}}

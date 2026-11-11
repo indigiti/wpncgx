@@ -244,6 +244,26 @@ jobs:
           $WP option update ncg_module_switches '{"bot":1,"worker":1,"reports":1,"media_uploads":1,"category_creation":1,"featured_alt":1}' --format=json
           $WP eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-media-policy.php
           $WP option update ncg_module_switches '{"bot":1,"worker":1,"reports":1,"media_uploads":0,"category_creation":0,"featured_alt":0}' --format=json
+      - name: Persist upload format and size settings without enabling enforcement
+        run: |
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            wp_set_current_user(get_user_by("login","admin")->ID);
+            $_POST=["max_kb"=>"2048","media_types"=>["jpeg","webp","png","pdf"]];
+            $_REQUEST=$_POST;
+            $_REQUEST["_wpnonce"]=wp_create_nonce("nrg_save_media_policy");
+            \NCG\Dashboard::save_media_policy();
+          '
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $s=\NCG\MediaPolicy::settings();
+            if ($s["max_kb"]!==2048 || !in_array("pdf",$s["types"],true) ||
+                !in_array("png",$s["types"],true)) {
+              WP_CLI::error("Policy save failed");
+            }
+            if (\NCG\Modules::on("media_uploads")) {
+              WP_CLI::error("Saving policy unexpectedly enabled enforcement");
+            }
+            WP_CLI::success("Upload policy saved and existing independent switch preserved");
+          '
       - name: Verify native GitHub update integration
         run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-github-updates.php
       - name: Explain limits

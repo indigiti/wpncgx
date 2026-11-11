@@ -54,6 +54,10 @@ Newsroom Guard → **Module Manager → Media and content policies** now include
 
 Newsroom Guard now integrates with native **WordPress Plugins → Update now** for releases from [indigiti/wpncgx](https://github.com/indigiti/wpncgx/releases). Configure **Stable** (default) or **Testing** (includes prereleases) under **Newsroom Guard → Module Manager → GitHub Release Updates**. The updater validates the exact GitHub ZIP URL and SHA-256 checksum before installation. WordPress administrators control automatic updates in the normal Plugins screen; nothing auto-installs by default. Existing `1.2.0-rc3` installs must receive this new updater code once through DigiOps or a manual ZIP. See [GITHUB-UPDATES.md](GITHUB-UPDATES.md) for setup, verification and limitations.
 
+## Configurable media upload policies (v1.2.0-rc5)
+
+The upload guard now supports an administrator-defined **1–20,480 KB** size limit and allowed file types: **JPG/JPEG, WebP, PNG, GIF or PDF**. Defaults remain 500 KB and JPG/JPEG + WebP for existing installations. Its ON/OFF control remains separate, OFF by default. Configure under **Newsroom Guard → Module Manager → Configure file types & maximum size**. The uploaded MediaFlow 0.2.5 archive remains a separate image-delivery plugin, not bundled or installed with Newsroom Guard. See [MEDIA-POLICIES.md](MEDIA-POLICIES.md).
+
 ## Future work and module roadmap
 
 The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

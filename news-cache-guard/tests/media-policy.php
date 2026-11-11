@@ -13,11 +13,19 @@ function get_option($key, $fallback = null) {return $GLOBALS['nrg_test_opts'][$k
 function add_filter($hook, $callback, $priority = 10, $args = 1) {$GLOBALS['nrg_test_hooks'][] = $hook;}
 function add_action($hook, $callback, $priority = 10, $args = 1) {$GLOBALS['nrg_test_hooks'][] = $hook;}
 function wp_check_filetype_and_ext($path, $name, $types = []) {
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if ($ext === 'pdf') {
+        $ok = substr((string)file_get_contents($path),0,5)==='%PDF-' && isset($types['pdf']);
+        return ['ext'=>$ok ? 'pdf' : false,'type'=>$ok ? 'application/pdf' : false];
+    }
     $img = @getimagesize($path);
     if (!$img) return ['ext'=>false,'type'=>false];
-    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    $expected = in_array($ext,['jpg','jpeg'],true) ? 'image/jpeg' : ($ext==='webp' ? 'image/webp' : '');
-    return ['ext'=>($img['mime']===$expected ? $ext : false),'type'=>($img['mime']===$expected ? $expected : false)];
+    $expected = in_array($ext,['jpg','jpeg'],true) ? 'image/jpeg' :
+        ($ext==='webp' ? 'image/webp' : ($ext==='png' ? 'image/png' : ($ext==='gif' ? 'image/gif' : '')));
+    $allowed = false;
+    foreach ($types as $key=>$mime) if ($mime === $expected) $allowed = true;
+    $ok = $allowed && $img['mime']===$expected;
+    return ['ext'=>$ok ? $ext : false,'type'=>$ok ? $expected : false];
 }
 class WP_Error {
     private $code;
@@ -115,6 +123,37 @@ $GLOBALS['nrg_test_opts'][Modules::OPTION]['featured_alt']=0;
 MediaPolicy::ensure_featured_alt(11);
 nrg_expect(get_post_meta(21,'_wp_attachment_image_alt')==='',
     'Featured alt automation stops immediately when switched OFF');
+
+
+nrg_expect(MediaPolicy::settings()===['max_kb'=>500,'types'=>['jpeg','webp']],
+    'Existing 500 KB JPEG/WebP policy is preserved as the upgrade default');
+nrg_expect(MediaPolicy::clean(['max_kb'=>30000,'types'=>['pdf','png','bad']]) ===
+    ['max_kb'=>20480,'types'=>['png','pdf']], 'Configured upload size is capped and unsupported MIME types rejected');
+nrg_expect(MediaPolicy::clean(['max_kb'=>0,'types'=>[]]) ===
+    ['max_kb'=>1,'types'=>['jpeg','webp']], 'Malformed stored settings fail closed to a safe allowlist');
+
+$GLOBALS['nrg_test_opts'][MediaPolicy::OPTION] = ['max_kb'=>4000,'types'=>['jpeg','webp','png','pdf']];
+$config = MediaPolicy::settings();
+nrg_expect($config['max_kb']===4000 && in_array('pdf',$config['types'],true),
+    'Administrators can set a 4 MB policy and explicitly enable PDFs');
+$mime=MediaPolicy::allowed_mimes([]);
+nrg_expect(isset($mime['png'],$mime['pdf']) && !isset($mime['gif']),
+    'Dynamic upload MIME allowlist enforces selected formats only');
+$n = MediaPolicy::check_upload(['name'=>'newspage.png','tmp_name'=>$png,'size'=>1]);
+nrg_expect(empty($n['error']), 'PNG accepted after explicitly enabling it');
+$pdf=nrg_fixture(base64_encode("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n"));
+$n=MediaPolicy::check_upload(['name'=>'edition.pdf','tmp_name'=>$pdf,'size'=>1]);
+nrg_expect(empty($n['error']), 'PDF accepted with valid header and MIME when explicitly allowed');
+$n=MediaPolicy::check_upload(['name'=>'fake-edition.pdf','tmp_name'=>$jpeg,'size'=>1]);
+nrg_expect(!empty($n['error']), 'Fake PDF rejected despite permitted filename extension');
+$n=MediaPolicy::check_upload(['name'=>'motion.gif','tmp_name'=>$png,'size'=>1]);
+nrg_expect(!empty($n['error']), 'Non-selected GIF format remains blocked');
+nrg_expect(strpos(MediaPolicy::error_message(),'4,000 KB')!==false &&
+    strpos(MediaPolicy::error_message(),'PDF')!==false, 'Media errors reflect current administrator configuration');
+$GLOBALS['nrg_test_opts'][MediaPolicy::OPTION]=['max_kb'=>1,'types'=>['jpeg']];
+$n=MediaPolicy::check_upload(['name'=>'edition.pdf','tmp_name'=>$pdf,'size'=>1]);
+nrg_expect(!empty($n['error']), 'Turning off PDF explicitly rejects it without losing image rules');
+@unlink($pdf);
 
 foreach([$jpeg,$webp,$png,$oversize] as $path) @unlink($path);
 echo "All Media Policy tests passed.\n";

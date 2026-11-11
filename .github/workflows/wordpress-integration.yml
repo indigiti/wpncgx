@@ -145,7 +145,7 @@ jobs:
             $admin = get_user_by("login","admin");
             wp_set_current_user($admin->ID);
             $_GET = ["page"=>"newsroom-guard","tab"=>"overview"];
-            ob_start(); \\NCG\\Dashboard::render(); $html=ob_get_clean();
+            ob_start(); \NCG\Dashboard::render(); $html=ob_get_clean();
             if (strpos($html,"Newsroom Guard")===false ||
                 strpos($html,"Publishing activity")===false ||
                 strpos($html,"Module Manager")===false) {
@@ -153,7 +153,7 @@ jobs:
             }
             foreach (["cache","bots","workers","approvals","audit","security","lock","reports","settings"] as $tab) {
               $_GET=["page"=>"newsroom-guard","tab"=>$tab];
-              ob_start(); \\NCG\\Dashboard::render(); $content=ob_get_clean();
+              ob_start(); \NCG\Dashboard::render(); $content=ob_get_clean();
               if (strpos($content,"nrg-shell")===false) WP_CLI::error("Failed dashboard tab: ".$tab);
             }
             WP_CLI::success("All 10 live WordPress admin sections render.");

@@ -35,5 +35,7 @@ jobs:
         run: php news-cache-guard/tests/navigation.php
       - name: Newsroom media policy security tests
         run: php news-cache-guard/tests/media-policy.php
+      - name: Native GitHub updater security tests
+        run: php news-cache-guard/tests/github-updates.php
       - name: Newsroom Guard display name and upgrade compatibility
         run: php news-cache-guard/tests/branding.php

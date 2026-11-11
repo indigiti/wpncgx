@@ -24,6 +24,9 @@ jobs:
           php news-cache-guard/tests/worker-guard.php
           php news-cache-guard/tests/worker-guard.php phase2
           php news-cache-guard/tests/worker-guard.php forcecache
+          for mode in unavailable future overdue empty error both-off; do
+            php news-cache-guard/tests/worker-diagnostics.php "$mode"
+          done
           php news-cache-guard/tests/performance.php
           php news-cache-guard/tests/counter-efficiency.php
           php news-cache-guard/tests/guard-budget.php dry

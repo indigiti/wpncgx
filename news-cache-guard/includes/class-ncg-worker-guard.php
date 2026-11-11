@@ -18,11 +18,13 @@ final class WorkerGuard {
     private static bool $booted = false;
 
     public static function boot(): void {
-        if (class_exists(Modules::class, false) && !Modules::on('worker')) return;
-        if (self::$booted) {
+        if (self::$booted) return;
+        self::$booted = true;
+        if (class_exists(Modules::class, false) && !Modules::on('worker')) {
+            // Diagnostics remain accessible when limits are disabled.
+            if (is_admin()) add_action('admin_menu', [__CLASS__, 'admin_menu']);
             return;
         }
-        self::$booted = true;
 
         add_filter('action_scheduler_queue_runner_batch_size', [__CLASS__, 'action_scheduler_batch_size'], 999);
         add_filter('action_scheduler_queue_runner_concurrent_batches', [__CLASS__, 'action_scheduler_concurrent_batches'], 999);

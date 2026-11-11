@@ -41,4 +41,14 @@ verify(Editorial::map_meta_cap(['edit_posts'],'edit_post',2,[99]) === ['do_not_a
 verify(Editorial::map_meta_cap(['edit_posts'],'edit_post',1,[99]) === ['edit_posts'], 'Admin retains capability');
 $GLOBALS['ncg_ed_opts'][Editorial::OPTION]['master'] = 0;
 verify(!Editorial::locked(99), 'Master off disables lock without affecting posts');
+require_once __DIR__ . '/../includes/class-ncg-editorial-workflow.php';
+$actor = (object)['ID'=>2];
+$caps = \NCG\EditorialWorkflow::publish_cap(['publish_posts'=>true,'manage_options'=>false], [], [], $actor);
+verify($caps['publish_posts'] === false, 'Editor cannot directly publish while approval module is on');
+$admin_caps = \NCG\EditorialWorkflow::publish_cap(['publish_posts'=>true,'manage_options'=>true], [], [], (object)['ID'=>1]);
+verify($admin_caps['publish_posts'] === true, 'Administrator emergency publish cap preserved');
+$GLOBALS['ncg_ed_opts'][Editorial::OPTION]['master'] = 1;
+$GLOBALS['ncg_ed_opts'][Editorial::OPTION]['approvals'] = 1;
+$allowed_caps = \NCG\EditorialWorkflow::publish_cap(['publish_posts'=>true,'manage_options'=>false], [], [], $actor);
+verify($allowed_caps['publish_posts'] === false, 'Approvals hide Publish button for Editors');
 echo "All editorial unit checks passed.\n";

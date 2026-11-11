@@ -159,6 +159,13 @@ jobs:
             }
             WP_CLI::success("All 10 live WordPress admin sections render.");
           '
+      - name: Verify Bot and Worker modules OFF without affecting legacy configuration
+        run: |
+          set -euo pipefail
+          WP="php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test"
+          $WP option update ncg_module_switches '{"bot":0,"worker":0,"reports":1}' --format=json
+          $WP eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-module-isolation.php
+          $WP option update ncg_module_switches '{"bot":1,"worker":1,"reports":1}' --format=json
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

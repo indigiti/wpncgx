@@ -17,6 +17,9 @@ final class Plugin {
     }
 
     public function boot(): void {
+        // Register option invalidation before other modules read the same settings.
+        Settings::boot();
+        Modules::boot();
         $this->guard = new Guard();
         $this->purger = new Purger();
         $this->admin = new Admin();

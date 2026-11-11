@@ -132,6 +132,15 @@ final class Guard {
         $missLimit = (int)($rule['miss'] ?? Settings::get('miss_limit', 2));
         $missCount = Counter::increment('miss', $this->identity, $missWindow);
 
+        // Once the miss limit already determines a real 429/403 rejection,
+        // unique-URL bookkeeping cannot alter the decision. Skip its Redis
+        // marker/count operations for rejected requests. During dry-run keep
+        // collecting both budgets for accurate policy diagnostics.
+        if ($missCount > $missLimit && (int)Settings::get('dry_run', 1) !== 1) {
+            $this->block_or_dry('miss-budget');
+            return;
+        }
+
         $uri = $this->canonical_origin_uri();
         $uniqueCount = Counter::increment_unique('url', $this->identity, $uri, (int)Settings::get('unique_url_window', 60));
         $uniqueLimit = (int)($rule['unique'] ?? Settings::get('unique_url_limit', 3));

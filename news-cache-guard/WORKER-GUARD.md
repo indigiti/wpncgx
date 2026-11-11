@@ -1,6 +1,6 @@
 # PM Worker Guard (integrated) — v1.0.4
 
-News Cache Guard loads this module automatically; do **not** activate the old standalone PM Worker Guard alongside it. The module conservatively caps **Action Scheduler queue claims**, **Yoast** XML sitemap sizes, and **Rank Math** XML sitemap sizes. It does **not** set PHP-FPM `pm.max_children`, enforce a maximum number of PHP requests, or stop slow background jobs. A batch of five *slow* jobs can still exhaust a worker or database.
+Newsroom Guard loads this module automatically; do **not** activate the old standalone PM Worker Guard alongside it. The module conservatively caps **Action Scheduler queue claims**, **Yoast** XML sitemap sizes, and **Rank Math** XML sitemap sizes. It does **not** set PHP-FPM `pm.max_children`, enforce a maximum number of PHP requests, or stop slow background jobs. A batch of five *slow* jobs can still exhaust a worker or database.
 
 ## Defaults (PHP 7.4+)
 
@@ -18,7 +18,7 @@ The limits preserve more conservative values supplied by other plugins. Rank Mat
 ## Recommended staging rollout
 
 1. Back up your WordPress database and any modified cron configuration. Deactivate the **standalone** PM Worker Guard, if installed, to prevent overlapping filters.
-2. Upgrade News Cache Guard v1.0.4, then visit **Tools → PM Worker Guard** to confirm the module is loaded. No separate MU plugin is needed for this part; the optional **Search Guard MU** continues independently.
+2. Upgrade Newsroom Guard (formerly News Cache Guard; introduced in v1.0.4), then visit **Tools → PM Worker Guard** to confirm the module is loaded. No separate MU plugin is needed for this part; the optional **Search Guard MU** continues independently.
 3. Monitor **Tools → Scheduled Actions** (when available) and count pending, overdue, and failed tasks. Identify the slowest hooks and log their processing durations. Limiting batch claims may increase backlog, especially if numerous notifications or WooCommerce subscriptions are due.
 4. Via Cloudways SSH, run the status-page WP-CLI command *manually* using the correct PHP/WP-CLI binary and path; confirm that actions complete and exit successfully. Use `wp --path=/path/to/wordpress action-scheduler run --batch-size=5 --batches=1` as a pattern.
 5. Only **after** WP-CLI is proven, add a server cron once per minute. Ensure it executes as the intended web/CLI user and does not overlap; use `flock` if available or equivalent locking, and monitor failures. `--quiet` is appropriate only after validation, with independent stderr logging.
@@ -41,7 +41,7 @@ define( 'PMWG_YOAST_LINKS_PER_SITEMAP', 250 );
 
 ## Rollback
 
-Remove the async-disable constant to restore browser loopback dispatch and stop the external cron only once you have confirmed ordinary WP-Cron queue processing. Disable the News Cache Guard plugin to remove the worker and sitemap cap filters (this also removes its other origin/cache protection). Avoid relying on the sitemap cap to protect against cache-bypass crawler spikes; those need edge controls and/or origin profiling.
+Remove the async-disable constant to restore browser loopback dispatch and stop the external cron only once you have confirmed ordinary WP-Cron queue processing. Disable the Newsroom Guard plugin to remove the worker and sitemap cap filters (this also removes its other origin/cache protection). Avoid relying on the sitemap cap to protect against cache-bypass crawler spikes; those need edge controls and/or origin profiling.
 
 ## Tests
 

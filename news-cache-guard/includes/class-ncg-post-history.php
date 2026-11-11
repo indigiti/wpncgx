@@ -186,9 +186,22 @@ final class PostHistory {
         ));
         $creator = self::first_event($id, 'created');
         $publisher = self::first_event($id, 'published');
-        $last_edit = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table WHERE post_id=%d AND event IN ('edited','author_changed') ORDER BY id DESC LIMIT 1", $id
-        ));
+        // The newest change is normally in the 20 rows already loaded for
+        // this metabox. Avoid a fourth SQL query on the common edit path.
+        $last_edit = null;
+        foreach ($rows as $row) {
+            if ($row->event === 'edited' || $row->event === 'author_changed') {
+                $last_edit = $row;
+                break;
+            }
+        }
+        // For an older article with >20 newer non-edit events, preserve the
+        // exact historical answer rather than incorrectly saying "Not recorded".
+        if ($last_edit === null) {
+            $last_edit = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE post_id=%d AND event IN ('edited','author_changed') ORDER BY id DESC LIMIT 1", $id
+            ));
+        }
         $author = get_the_author_meta('display_name', (int)$post->post_author);
         echo '<p><strong>Public author:</strong> ' . esc_html($author ?: 'Unknown') . '</p>';
         echo '<p><strong>Created by:</strong> ' . esc_html(self::actor_label($creator)) . '</p>';

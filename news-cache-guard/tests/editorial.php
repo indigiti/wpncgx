@@ -53,4 +53,6 @@ $GLOBALS['ncg_ed_opts'][Editorial::OPTION]['master'] = 1;
 $GLOBALS['ncg_ed_opts'][Editorial::OPTION]['approvals'] = 1;
 $allowed_caps = \NCG\EditorialWorkflow::publish_cap(['publish_posts'=>true,'manage_options'=>false], [], [], $actor);
 verify($allowed_caps['publish_posts'] === false, 'Approvals hide Publish button for Editors');
+verify(Editorial::map_meta_cap(['edit_posts'], 'edit_post', 529, [99]) === ['do_not_allow'],
+    'Allowlisted lock user does not bypass independent approval');
 echo "All editorial unit checks passed.\n";

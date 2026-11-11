@@ -1,10 +1,10 @@
-# News Cache Guard for LiteSpeed
+# Newsroom Guard
 
 Lightweight WordPress origin request protection and LiteSpeed cache-key normalization, designed for high-traffic news publishers. Version 1.0.6 incorporates an audit of the supplied 1.0.1 hotfix. WordPress 6.2+ and PHP 7.4+.
 
 ## Install
 
-Upload a ZIP containing the `news-cache-guard/` directory using **Plugins → Add New → Upload Plugin**, then visit **Settings → News Cache Guard**. Keep Dry Run enabled until origin-limit thresholds are proven on staging. Read [INSTALL.md](INSTALL.md), [SECURITY.md](SECURITY.md), and [TESTING.md](TESTING.md) before enforcement.
+Upload a ZIP containing the `news-cache-guard/` directory using **Plugins → Add New → Upload Plugin**, then visit **Settings → Newsroom Guard**. Keep Dry Run enabled until origin-limit thresholds are proven on staging. Read [INSTALL.md](INSTALL.md), [SECURITY.md](SECURITY.md), and [TESTING.md](TESTING.md) before enforcement.
 
 ## Early 3-per-minute search protection
 
@@ -34,7 +34,7 @@ If bots repeatedly request `Cache-Control: no-cache`, the opt-in **Ignore client
 
 ## Editorial & Publishing (v1.1.0-rc1, staged behind master OFF)
 
-A separate **Settings → News Cache Guard → Editorial & Publishing** tab provides an independent master switch and group toggles for Publishing Audit, Security Intelligence, Two-Person Approval and Post-Publication Lock. The Master switch is **OFF by default** on both fresh installs and upgrades; all LiteSpeed cache, Cloudflare, Redis, request protection and worker policies remain independent.
+A separate **Settings → Newsroom Guard → Editorial & Publishing** tab provides an independent master switch and group toggles for Publishing Audit, Security Intelligence, Two-Person Approval and Post-Publication Lock. The Master switch is **OFF by default** on both fresh installs and upgrades; all LiteSpeed cache, Cloudflare, Redis, request protection and worker policies remain independent.
 
 For an enabled approval workflow, Authors and Editors submit posts to a review queue. Editor-originated articles require approval by a different Editor. Published-article changes use pending revision proposals, while the four-hour post-publication lock blocks unauthorised direct edits and deletions. Administrator emergency publishing is audited. User ID 529 is exempt from **the lock only**, never from independent approval.
 

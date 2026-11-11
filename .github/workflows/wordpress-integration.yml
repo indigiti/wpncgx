@@ -267,7 +267,16 @@ jobs:
       - name: Verify native GitHub update integration
         run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-github-updates.php
       - name: Verify actual WordPress staff attribution, author changes and private Post History
-        run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-post-history.php
+        run: |
+          # The earlier tests intentionally boot the approvals/lock hooks ON.
+          # Persist OFF before a fresh WP-CLI process so passive attribution is
+          # tested independently, without stale in-memory enforcement hooks.
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $s=\NCG\Editorial::settings();
+            $s["master"]=0;
+            update_option(\NCG\Editorial::OPTION,\NCG\Editorial::clean($s),false);
+          '
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-post-history.php
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

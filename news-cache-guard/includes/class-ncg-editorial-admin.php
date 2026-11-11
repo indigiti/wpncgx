@@ -137,6 +137,18 @@ final class EditorialAdmin {
             echo '<option value="' . (int)$cat->term_id . '" ' . selected(in_array((int)$cat->term_id, $current, true), true, false) . '>' . esc_html($cat->name) . '</option>';
         }
         echo '</select></label></p>';
+        echo '<h3>SEO metadata changes (independent approval required)</h3>';
+        foreach ([
+            '_yoast_wpseo_title'=>'Yoast SEO title',
+            '_yoast_wpseo_metadesc'=>'Yoast meta description',
+            '_yoast_wpseo_canonical'=>'Yoast canonical URL',
+            'rank_math_title'=>'Rank Math SEO title',
+            'rank_math_description'=>'Rank Math meta description',
+            'rank_math_canonical_url'=>'Rank Math canonical URL'
+        ] as $key=>$label) {
+            echo '<p><label><strong>' . esc_html($label) . '</strong><br><input class="large-text" name="seo[' .
+                esc_attr($key) . ']" value="' . esc_attr((string)get_post_meta($id,$key,true)) . '"></label></p>';
+        }
         submit_button('Submit Revision for Approval');
         echo '</form>';
     }

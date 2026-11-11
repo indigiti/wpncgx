@@ -22,7 +22,7 @@ final class Purger {
         // Cover new publications, published edits and publication reversals.
         // Don't purge for ordinary draft changes or autosaves.
         if ($post->post_status !== 'publish' &&
-            (!$before instanceof \WP_Post || $before->post_status !== 'publish')) return;
+            (!($before instanceof \WP_Post) || $before->post_status !== 'publish')) return;
         $this->purge_post($postId);
     }
 

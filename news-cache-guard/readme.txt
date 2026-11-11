@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc2
+Stable tag: 1.2.0-rc3
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.

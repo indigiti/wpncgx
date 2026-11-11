@@ -18,7 +18,7 @@ See [FRESH-CACHE-DEFENSE.md](FRESH-CACHE-DEFENSE.md). Keep the advanced **Ignore
 1. Back up the database and `.htaccess`.
 2. Upload `news-cache-guard.zip` from **Plugins → Add New → Upload Plugin**.
 3. Activate **Newsroom Guard**.
-4. Open **Settings → Newsroom Guard**.
+4. Open **Newsroom Guard** from the main WordPress admin menu. Advanced controls are under **Module Manager → Advanced Controls**.
 5. Leave **Dry Run** enabled.
 6. Confirm **Persistent Object Cache = CONNECTED**.
 7. Click **Sync .htaccess Now**.
@@ -32,7 +32,7 @@ See [FRESH-CACHE-DEFENSE.md](FRESH-CACHE-DEFENSE.md). Keep the advanced **Ignore
 
 ## MU Search Guard installation (strict search enforcement)
 
-The WordPress plugin ZIP also contains `mu-plugins/wp-search-guard.php` but **WordPress does not automatically install nested MU files**. Copy it manually from the plugin into `wp-content/mu-plugins/wp-search-guard.php` using Cloudways SFTP/SSH. Confirm **Settings → Newsroom Guard → Search Guard (3/60s) = MU ACTIVE**. This strict limit is active even with the normal plugin's Dry Run ON, and requires an atomic persistent object cache. The regular plugin fallback remains Dry Run-aware. Full details and rollback instructions: [MU-SEARCH-GUARD.md](MU-SEARCH-GUARD.md).
+The WordPress plugin ZIP also contains `mu-plugins/wp-search-guard.php` but **WordPress does not automatically install nested MU files**. Copy it manually from the plugin into `wp-content/mu-plugins/wp-search-guard.php` using Cloudways SFTP/SSH. Confirm **Newsroom Guard → Overview → Early Search Guard MU = Active independently**. This strict limit is active even with the normal plugin's Dry Run ON, and requires an atomic persistent object cache. The regular plugin fallback remains Dry Run-aware. Full details and rollback instructions: [MU-SEARCH-GUARD.md](MU-SEARCH-GUARD.md).
 
 ## Recommended starting defaults
 
@@ -62,4 +62,4 @@ No extra plugin or MU file is necessary. Open **Tools → PM Worker Guard** to s
 
 ## Production evidence (v1.0.5)
 
-Before enabling origin enforcement, read [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md). Run **Settings → Newsroom Guard → Test Atomic Object Cache** to check a short-lived object-cache key. On staging, use `bash tools/cache-probe.sh 'https://stage.example.com/article/' 'https://stage.example.com/?s=test'` and the optional k6 test. The deprecated Force Cache policy has been removed for privacy.
+Before enabling origin enforcement, read [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md). Run **Newsroom Guard → Module Manager → Advanced Controls → Check object-cache atomic operations** to check a short-lived object-cache key. On staging, use `bash tools/cache-probe.sh 'https://stage.example.com/article/' 'https://stage.example.com/?s=test'` and the optional k6 test. The deprecated Force Cache policy has been removed for privacy.

@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.1.0-rc1
+Stable tag: 1.2.0-rc1
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,13 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc1 =
+* Ten-section responsive WordPress administration workspace with accessible navigation and compact typography.
+* Real audit/activity metrics, security reporting, bounded filtered CSV exports and paginated independent review queue.
+* Independent runtime Bot/Worker/Reports toggles alongside existing editorial controls. MU search remains separate.
+* Preserves legacy settings and LiteSpeed marker; requires Cloudways staging verification before production.
+
 
 = 1.1.0-rc1 =
 * Optional Editorial & Publishing settings tab (master OFF on upgrade).

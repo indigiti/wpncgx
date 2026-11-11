@@ -8,7 +8,8 @@ Implemented in v1.2.0-rc7:
 1. **Request-local configuration caching** for core settings, module switches and sanitized cache-key patterns. WordPress option-update hooks invalidate caches; Multisite reads are isolated by blog ID. No persistent cache keys or Redis operations are introduced.
 2. **Single-pass cache invalidation:** Purger listens to wp_after_insert_post only rather than both transition_post_status and save_post. The callback runs after WordPress persists post terms and metadata. It still purges on first publication, published edits, unpublishing and direct wp_publish_post() scheduled publishing. Identical URLs in one purge set are deduplicated.
 3. **Read-only cache environment hints:** the admin-only Cache & Performance page describes PHP server header hints and the presence of Breeze/LiteSpeed integrations. It does not prove an actual cache HIT and does not call remote APIs, change Varnish settings, introduce page cache or automatically purge Cloudflare.
-4. **Regression gates:** tests/performance.php plus real WordPress/MariaDB tests/wp-performance.php exercise option invalidation and publishing transitions.
+4. **Idle-path reduction:** when editorial audit is disabled, do not query/schedule its maintenance cron on each request; once Post History storage is installed, skip its migration hook registration; avoid allocating the admin controller on public requests.
+5. **Regression gates:** tests/performance.php plus real WordPress/MariaDB tests/wp-performance.php exercise option invalidation and publishing transitions.
 
 ## Explicitly NOT in rc7
 

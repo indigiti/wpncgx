@@ -66,7 +66,7 @@ jobs:
           CODE=$?
           set -e
           printf '%s\n' "$MESSAGE"
-          if [ "$CODE" -eq 0 ] || ! echo "$MESSAGE" | grep -q "Editorial Approval Required"; then
+          if [ "$CODE" -eq 0 ] || ! echo "$MESSAGE" | grep -q "Live article is protected"; then
             echo "::error::Unapproved direct post mutation did not fail closed."
             exit 1
           fi

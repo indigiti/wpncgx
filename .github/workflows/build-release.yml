@@ -177,7 +177,8 @@ jobs:
             cat > dist/RELEASE-NOTES.md <<'NOTES'
           Newsroom Guard v1.2.0-rc8 — TESTING ONLY.
 
-          P2 optimizes atomic Redis counter hot paths and reduces redundant
+          P2 preserves Redis counter expiry while skipping redundant unique-URL
+          accounting on enforced misses, and reduces redundant
           Post History SQL queries, with read-only admin resource snapshots.
 
           Includes request-local configuration caching and single-shot post-save

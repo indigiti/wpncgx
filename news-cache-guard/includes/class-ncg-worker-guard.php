@@ -1,6 +1,6 @@
 <?php
 /**
- * PM Worker Guard integration for News Cache Guard.
+ * PM Worker Guard integration for Newsroom Guard.
  * Limits Action Scheduler queue claims and SEO XML sitemap batch sizes; it does
  * not alter PHP-FPM process-manager settings or kill running workers.
  */
@@ -161,7 +161,7 @@ final class WorkerGuard {
             . 'define( \'PMWG_ACTION_SCHEDULER_CONCURRENT_BATCHES\', 1 );' . "\n"
             . 'define( \'PMWG_RANKMATH_LINKS_PER_SITEMAP\', 200 );' . "\n"
             . 'define( \'PMWG_YOAST_LINKS_PER_SITEMAP\', 250 );</pre>';
-        echo '<p>The sitemap caps may change sitemap pagination. After rollout, flush Rank Math/Yoast sitemap caches and verify sitemap indexes. <a href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Back to News Cache Guard</a>.</p>';
+        echo '<p>The sitemap caps may change sitemap pagination. After rollout, flush Rank Math/Yoast sitemap caches and verify sitemap indexes. <a href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Back to Newsroom Guard</a>.</p>';
         echo '</div>';
     }
 }

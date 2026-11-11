@@ -9,8 +9,8 @@ LiteSpeed documents the request-side directive `CacheIgnoreCacheControl On`, whi
 ## How the opt-in works
 
 - **Default: OFF**, so upgrading does not change request semantics.
-- In **Settings → News Cache Guard → Bot fresh-request cache defense**, enable *Ignore client no-cache request headers during LiteSpeed cache lookup*. Save and confirm the marked block was successfully synchronized into root `.htaccess`.
-- The plugin writes `CacheIgnoreCacheControl On` inside `<IfModule LiteSpeed>` in its **News Cache Guard managed block**. It is independent of query-key collapse, and the block is removed when disabled and synchronized again.
+- In **Settings → Newsroom Guard → Bot fresh-request cache defense**, enable *Ignore client no-cache request headers during LiteSpeed cache lookup*. Save and confirm the marked block was successfully synchronized into root `.htaccess`.
+- The plugin writes `CacheIgnoreCacheControl On` inside `<IfModule LiteSpeed>` in its **legacy News Cache Guard managed block** (retained for upgrade compatibility). It is independent of query-key collapse, and the block is removed when disabled and synchronized again.
 - **Scope: all client requests in the WordPress `.htaccess` directory, not only bots or articles.** This is a web-server directive, so the PHP plugin cannot select individual verified crawlers on a cache HIT. Requests for private/uncacheable responses MUST still be excluded by LiteSpeed, Cloudflare, cookies and WordPress.
 - It does **not** block bots, remove random content-changing query parameters, create missing cached articles, or ensure Cloudflare edge HTML caching. A bot that changes URLs still generates new cache keys unless the parameter is explicitly and safely normalized.
 - It may affect a legitimate hard refresh: a browser-requested `Cache-Control: no-cache` may no longer force regeneration. Verify editorial purge behavior when stories are corrected.

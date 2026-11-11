@@ -1,0 +1,145 @@
+name: WordPress editorial integration
+
+on:
+  pull_request:
+    paths:
+      - 'news-cache-guard/**'
+      - '.github/workflows/wordpress-integration.yml'
+  push:
+    branches:
+      - feature/editorial-controls
+
+jobs:
+  wordpress-api-integration:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: editorial_test
+          MARIADB_USER: wp
+          MARIADB_PASSWORD: wp_ci_password
+          MARIADB_ROOT_PASSWORD: root_ci_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, curl, zip
+          coverage: none
+      - name: Download WordPress and WP-CLI into an ephemeral test site
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar
+          php /tmp/wp-cli.phar --info | head -20
+          mkdir -p /tmp/ncg-wp-test
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test core download --locale=en_US
+          cp -R news-cache-guard /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard
+      - name: Install isolated WordPress test site
+        run: |
+          set -euo pipefail
+          WP="php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test"
+          $WP config create --dbname=editorial_test --dbuser=wp --dbpass=wp_ci_password --dbhost=127.0.0.1:3306 --skip-check
+          $WP core install --url=http://localhost:8080 --title="Editorial CI Staging" --admin_user=admin --admin_password=ci_password_do_not_reuse --admin_email=admin@example.invalid --skip-email
+          $WP plugin activate news-cache-guard
+          $WP option update ncg_editorial_settings '{"master":1,"audit":1,"security":1,"approvals":1,"lock":1,"lock_hours":4,"bypass_ids":"529","retention_days":180,"email_alerts":0}' --format=json
+      - name: Run real WordPress API and cron integration checks
+        run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-integration.php
+      - name: Published-post write must fail before WordPress inserts metadata or terms
+        run: |
+          set -euo pipefail
+          set +e
+          MESSAGE=$(php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $e=get_user_by("login","ncg-editor-a");
+            wp_set_current_user($e->ID);
+            $posts=get_posts(["post_type"=>"post","s"=>"Protected Published Article","post_status"=>"publish"]);
+            if (!$posts) { WP_CLI::error("Fixture missing"); }
+            wp_update_post(["ID"=>$posts[0]->ID,"post_title"=>"Unapproved edit",
+              "meta_input"=>["_yoast_wpseo_title"=>"Unapproved SEO"],
+              "post_category"=>[1]]);
+          ' 2>&1)
+          CODE=$?
+          set -e
+          printf '%s\n' "$MESSAGE"
+          if [ "$CODE" -eq 0 ] || ! echo "$MESSAGE" | grep -q "Live article is protected"; then
+            echo "::error::Unapproved direct post mutation did not fail closed."
+            exit 1
+          fi
+      - name: Stale Editor approval form must not approve changed content
+        run: |
+          set -euo pipefail
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $reviewer=get_user_by("login","ncg-editor-b");
+            wp_set_current_user($reviewer->ID);
+            global $wpdb;
+            $posts=get_posts(["post_type"=>"post","post_status"=>"pending","s"=>"Author draft approval"]);
+            if (!$posts) WP_CLI::error("Pending fixture missing.");
+            $table=\NCG\Editorial::table("reviews");
+            $req=$wpdb->get_row($wpdb->prepare(
+              "SELECT * FROM $table WHERE post_id=%d AND status=%s ORDER BY id DESC LIMIT 1",
+              $posts[0]->ID,"pending"));
+            if (!$req) WP_CLI::error("Review request missing.");
+            $_REQUEST["_wpnonce"]=wp_create_nonce("ncg_ed_review");
+            $_POST=["review_id"=>$req->id,"snapshot_hash"=>str_repeat("0",64),"decision"=>"approve"];
+            \NCG\EditorialWorkflow::review();
+          '
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            global $wpdb;
+            $posts=get_posts(["post_type"=>"post","post_status"=>"pending",
+              "s"=>"Author draft approval","numberposts"=>5]);
+            if (!$posts) WP_CLI::error("Stale form approved the Author article.");
+            WP_CLI::success("Stale approval rejected; request remains pending.");
+          '
+      - name: End-to-end approval decision by independent Editor
+        run: |
+          set -euo pipefail
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $reviewer = get_user_by("login","ncg-editor-b");
+            wp_set_current_user($reviewer->ID);
+            $posts = get_posts(["post_type"=>"post","post_status"=>"pending",
+              "s"=>"Author draft approval", "numberposts"=>5]);
+            if (!$posts) WP_CLI::error("Pending Author article missing.");
+            global $wpdb;
+            $table = \NCG\Editorial::table("reviews");
+            $r = $wpdb->get_row($wpdb->prepare(
+              "SELECT * FROM $table WHERE post_id=%d AND status=%s ORDER BY id DESC LIMIT 1",
+              $posts[0]->ID, "pending"));
+            if (!$r || !\NCG\EditorialWorkflow::eligible($r, $reviewer->ID)) {
+              WP_CLI::error("Reviewer is not eligible.");
+            }
+            $_REQUEST["_wpnonce"] = wp_create_nonce("ncg_ed_review");
+            $_POST = ["review_id"=>$r->id,"snapshot_hash"=>$r->base_hash,"decision"=>"approve","note"=>"Independent editorial review passed"];
+            \NCG\EditorialWorkflow::review();
+          '
+      - name: Verify published article and reviewer audit after decision
+        run: |
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            global $wpdb;
+            $posts = get_posts(["post_type"=>"post","post_status"=>"publish",
+              "s"=>"Author draft approval","numberposts"=>5]);
+            if (!$posts) WP_CLI::error("Approved article did not publish.");
+            $post_id=$posts[0]->ID;
+            $table = \NCG\Editorial::table("reviews");
+            $req = $wpdb->get_row($wpdb->prepare(
+              "SELECT * FROM $table WHERE post_id=%d ORDER BY id DESC LIMIT 1",$post_id));
+            $editor_b=get_user_by("login","ncg-editor-b");
+            if (!$req || $req->status!=="approved" ||
+                (int)$req->reviewer_id!==(int)$editor_b->ID) {
+              WP_CLI::error("Independent approval record missing.");
+            }
+            $events=\NCG\Editorial::table("events");
+            $count=(int)$wpdb->get_var($wpdb->prepare(
+              "SELECT COUNT(*) FROM $events WHERE post_id=%d AND action=%s",
+              $post_id,"independently_approved"));
+            if (!$count) WP_CLI::error("Approval audit event missing.");
+            WP_CLI::success("Approved article, reviewer identity and audit event verified.");
+          '
+      - name: Explain limits
+        run: |
+          echo "PASS: WordPress API integration on ephemeral MariaDB test site."
+          echo "Cloudways staging, Gutenberg browser UI and LiteSpeed cache HIT/MISS still require independent staging verification."

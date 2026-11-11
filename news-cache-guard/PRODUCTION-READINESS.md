@@ -5,7 +5,7 @@
 - **Safer shared cache:** the optional Force Cache policy is retired. Existing saved `force_cache` and CIDR `force_cache` rules are normalized to `safe_shared`, avoiding forced public caching of personalized pages. LSCache remains responsible for public cache eligibility.
 - **Correct proxy identities:** when `REMOTE_ADDR` belongs to a configured trusted Cloudflare network but `CF-Connecting-IP` is absent/invalid, rate limiting fails open rather than placing unrelated visitors in one Cloudflare IP bucket. Configure the Cloudways/Cloudflare proxy chain correctly; private/loopback proxy hops also fail open rather than becoming shared visitor buckets. See `SECURITY.md`.
 - **Reliable failure semantics:** requests are allowed if the external object cache cannot perform an atomic increment. The plugin does not emulate an atomic Redis counter with racy `get`/`set` writes.
-- **Operator diagnostic:** **Settings → News Cache Guard → Test Atomic Object Cache** runs a manual, temporary key add/incr/read and reports success/failure. This is a one-request smoke test, **not** a cross-process Redis health proof.
+- **Operator diagnostic:** **Settings → Newsroom Guard → Test Atomic Object Cache** runs a manual, temporary key add/incr/read and reports success/failure. This is a one-request smoke test, **not** a cross-process Redis health proof.
 - **Repeatable staging probes:** script `tools/cache-probe.sh` checks anonymous article caching and search no-cache behavior. Optional k6 script `tools/staging-load.js` runs bounded traffic against URLs containing `stage` or `staging` only.
 
 ## Production acceptance checklist (must all pass)

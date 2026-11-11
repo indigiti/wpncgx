@@ -1,12 +1,12 @@
-=== News Cache Guard for LiteSpeed ===
+=== Newsroom Guard ===
 Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.1.0-rc1
 License: GPLv2 or later
 
-Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
+Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
 
 == Core design ==
 * LiteSpeed public cache remains the first line of defense. Cache HITs do not execute this plugin.
@@ -28,9 +28,9 @@ The plugin intentionally ships with a safe list of tracking parameters (utm*, gc
 
 == Recommended rollout ==
 1. Install LiteSpeed Cache for WordPress and a persistent Redis object cache.
-2. Install and activate News Cache Guard.
+2. Install and activate Newsroom Guard.
 3. Keep Dry Run enabled for initial observation.
-4. Verify .htaccess is writable and use Settings > News Cache Guard > Sync .htaccess.
+4. Verify .htaccess is writable and use Settings > Newsroom Guard > Sync .htaccess.
 5. Confirm a public article returns X-LiteSpeed-Cache: miss, then hit on refresh.
 6. Test UTM URLs and confirm they reuse the same LiteSpeed cache object.
 7. Review counters, then disable Dry Run to enforce limits.
@@ -59,6 +59,14 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.1.0-rc1 =
+* Optional Editorial & Publishing settings tab (master OFF on upgrade).
+* Independent Audit / Security / Approvals / Four-Hour Lock controls; exempt ID 529 affects lock only.
+* Editor-to-Editor approval and protected live-article revisions with SEO field review.
+* Real WordPress REST, cron, metadata and permissions integration checks in CI.
+* Staging Cloudways/LiteSpeed validation required before production merge; see EDITORIAL-MODULE.md.
+
 
 = 1.0.6 =
 * Optional opt-in LiteSpeed `CacheIgnoreCacheControl On` for reuse of eligible cached articles despite client request no-cache headers. Default OFF, request-wide, not bot-specific; no response-side Force Public override.

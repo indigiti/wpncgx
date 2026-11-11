@@ -1,0 +1,32 @@
+name: Editorial safety checks
+
+on:
+  pull_request:
+    paths:
+      - 'news-cache-guard/**'
+      - '.github/workflows/editorial-checks.yml'
+  push:
+    branches:
+      - feature/editorial-controls
+
+jobs:
+  php-lint-and-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Lint all PHP files
+        run: find news-cache-guard -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Existing cache regression suite
+        run: |
+          php news-cache-guard/tests/regression.php
+          php news-cache-guard/tests/mu-search-guard.php
+          php news-cache-guard/tests/worker-guard.php
+      - name: Editorial settings and capability unit checks
+        run: php news-cache-guard/tests/editorial.php
+      - name: Newsroom Guard display name and upgrade compatibility
+        run: php news-cache-guard/tests/branding.php

@@ -12,11 +12,11 @@ final class LiteSpeed {
     }
 
     public static function safe_public_cache(): void {
-        do_action('litespeed_control_set_cacheable', 'News Cache Guard: safe public content');
+        do_action('litespeed_control_set_cacheable', 'Newsroom Guard: safe public content');
     }
 
     public static function no_cache(): void {
-        do_action('litespeed_control_set_nocache', 'News Cache Guard: protected/dynamic request');
+        do_action('litespeed_control_set_nocache', 'Newsroom Guard: protected/dynamic request');
     }
 
     public static function purge_url(string $url): void {

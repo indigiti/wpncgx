@@ -55,7 +55,7 @@ Then on staging disable Dry Run and verify excess protected origin requests rece
 
 Request configured scanner paths such as `/.env` or `/.git/`.
 
-- Dry Run ON: request is not rejected by News Cache Guard, but `Would block` increments.
+- Dry Run ON: request is not rejected by Newsroom Guard, but `Would block` increments.
 - Dry Run OFF: configured 404/403 is returned before normal theme rendering.
 
 ## 9. MU Search Guard: strict 3-search control

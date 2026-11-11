@@ -43,12 +43,13 @@ final class EditorialWorkflow {
     public static function gate(array $data, array $postarr, array $unsanitized = [], bool $update = false): array {
         if (self::$internal || ($data['post_type'] ?? '') !== 'post') return $data;
         $post = !empty($postarr['ID']) ? get_post((int)$postarr['ID']) : null;
-        if ($post && in_array($post->post_status, ['publish','future'], true) && !Editorial::bypass(get_current_user_id())) {
-            // No live update through REST, Classic, Gutenberg or Quick Edit.
-            foreach (['post_title','post_content','post_excerpt','post_name','post_status','post_author','post_date','post_date_gmt'] as $field) {
-                if (isset($data[$field])) $data[$field] = wp_slash($post->$field);
-            }
-            return $data;
+        if ($post && in_array($post->post_status, ['publish','future'], true) &&
+            EditorialHardening::blocked((int)$post->ID, get_current_user_id())) {
+            // This filter precedes the post write AND the subsequent meta/term
+            // updates in wp_insert_post(). Silently reverting content would
+            // still allow taxonomy and metadata writes to the live article.
+            wp_die('Live article is protected. Propose a revision for approval.',
+                'Editorial Approval Required', ['response'=>403]);
         }
         if (in_array(($data['post_status'] ?? ''), ['publish','future'], true)) {
             // Administrators have an emergency direct-publish bypass; peers do not.
@@ -71,7 +72,9 @@ final class EditorialWorkflow {
     public static function queue(int $id, $post, bool $update): void {
         if (self::$internal || $post->post_type !== 'post') return;
         if (!metadata_exists('post', $id, '_ncg_ed_creator')) {
-            add_post_meta($id, '_ncg_ed_creator', get_current_user_id() ?: (int)$post->post_author, true);
+            Editorial::$applying = true;
+            try { add_post_meta($id, '_ncg_ed_creator', get_current_user_id() ?: (int)$post->post_author, true); }
+            finally { Editorial::$applying = false; }
         }
         if ($post->post_status !== 'pending') return;
         global $wpdb;
@@ -89,7 +92,10 @@ final class EditorialWorkflow {
             // Any subsequent contributor to the pending revision is disqualified.
             $editors = (array)get_post_meta($id, '_ncg_ed_pending_editor_ids', true);
             if ($actor && !in_array($actor, $editors, true)) {
-                $editors[] = $actor; update_post_meta($id, '_ncg_ed_pending_editor_ids', $editors);
+                $editors[] = $actor;
+                Editorial::$applying = true;
+                try { update_post_meta($id, '_ncg_ed_pending_editor_ids', $editors); }
+                finally { Editorial::$applying = false; }
             }
             return;
         }
@@ -193,7 +199,9 @@ final class EditorialWorkflow {
         }
         $wpdb->update($table, ['status'=>'approved'], ['id'=>$id,'status'=>'processing']);
         Editorial::record('independently_approved', (int)$p->ID, ['review_id'=>$id,'reviewer_id'=>get_current_user_id()]);
-        delete_post_meta($p->ID, '_ncg_ed_pending_editor_ids');
+        Editorial::$applying = true;
+        try { delete_post_meta($p->ID, '_ncg_ed_pending_editor_ids'); }
+        finally { Editorial::$applying = false; }
         self::redirect('Approved and published.');
     }
     private static function apply($request, array $data) {

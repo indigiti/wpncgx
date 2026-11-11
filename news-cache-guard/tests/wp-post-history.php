@@ -3,7 +3,6 @@
  * Real WordPress + MariaDB end-to-end post history test.
  * Runs via wp-cli eval-file only against the ephemeral CI WordPress instance.
  */
-declare(strict_types=1);
 if (!defined('ABSPATH') || !class_exists('\NCG\PostHistory')) {
     throw new RuntimeException('Post History plugin must be active.');
 }

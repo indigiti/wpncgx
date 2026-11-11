@@ -49,7 +49,7 @@ final class Dashboard {
     }
 
     public static function assets($hook): void {
-        if ($hook !== 'toplevel_page_' . self::SLUG) return;
+        if (!in_array($hook, ['toplevel_page_' . self::SLUG, 'posts_page_ncg-editorial-reviews', 'admin_page_ncg-editorial-propose'], true)) return;
         wp_enqueue_style('nrg-admin', NCG_URL . 'assets/newsroom-dashboard.css', [], NCG_VERSION);
         // WordPress dashicons are already included on most admin screens.
         wp_enqueue_style('dashicons');
@@ -99,6 +99,7 @@ final class Dashboard {
         echo '<span class="nrg-top-site">' . esc_html(get_bloginfo('name')) . '</span>';
         echo '<a class="nrg-small-btn" href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Advanced settings</a>';
         echo '</div></header><div class="nrg-content">';
+        if (isset($_GET['nrg_review_notice'])) self::note(sanitize_text_field(wp_unslash($_GET['nrg_review_notice'])), 'success');
         if (isset($_GET['nrg_notice'])) {
             $message = sanitize_key(wp_unslash($_GET['nrg_notice']));
             $messages = [

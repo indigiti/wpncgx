@@ -31,3 +31,11 @@ See [PRODUCTION-READINESS.md](PRODUCTION-READINESS.md) for Cloudflare Free edge 
 ## Fresh-request cache defense (optional)
 
 If bots repeatedly request `Cache-Control: no-cache`, the opt-in **Ignore client no-cache during LiteSpeed lookup** setting writes the LiteSpeed request-side `CacheIgnoreCacheControl On` directive. It is **OFF by default** and applies across the WordPress directory, not only to bots. It does not force public responses or bypass normal LSCWP privacy checks. Run the [fresh-request cache defense staging checklist](FRESH-CACHE-DEFENSE.md) before enabling.
+
+## Editorial & Publishing (v1.1.0-rc1, staged behind master OFF)
+
+A separate **Settings → News Cache Guard → Editorial & Publishing** tab provides an independent master switch and group toggles for Publishing Audit, Security Intelligence, Two-Person Approval and Post-Publication Lock. The Master switch is **OFF by default** on both fresh installs and upgrades; all LiteSpeed cache, Cloudflare, Redis, request protection and worker policies remain independent.
+
+For an enabled approval workflow, Authors and Editors submit posts to a review queue. Editor-originated articles require approval by a different Editor. Published-article changes use pending revision proposals, while the four-hour post-publication lock blocks unauthorised direct edits and deletions. Administrator emergency publishing is audited. User ID 529 is exempt from **the lock only**, never from independent approval.
+
+This is a **release candidate on a draft pull request, not an approved production release**. The GitHub integration job tests real WordPress APIs against an ephemeral MariaDB instance, but must not substitute for Cloudways staging, Gutenberg browser, cache-purge and proxy testing. See [EDITORIAL-MODULE.md](EDITORIAL-MODULE.md).

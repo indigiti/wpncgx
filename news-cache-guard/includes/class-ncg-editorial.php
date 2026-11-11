@@ -112,6 +112,7 @@ final class Editorial {
         }
         if (self::on('approvals') || self::on('lock')) EditorialHardening::boot();
         if (self::on('approvals')) EditorialWorkflow::boot();
+        elseif (self::on('lock')) add_filter('wp_insert_post_data', [EditorialHardening::class, 'lock_post_data'], 9999, 4);
         add_action('ncg_editorial_cleanup', [self::class, 'cleanup']);
         if (!wp_next_scheduled('ncg_editorial_cleanup')) wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'ncg_editorial_cleanup');
     }

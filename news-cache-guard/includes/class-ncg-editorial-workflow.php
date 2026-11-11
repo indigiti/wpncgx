@@ -11,10 +11,19 @@ final class EditorialWorkflow {
     private static bool $internal = false;
     public static function boot(): void {
         add_filter('wp_insert_post_data', [self::class, 'gate'], 9999, 4);
+        add_filter('user_has_cap', [self::class, 'publish_cap'], 999, 4);
         add_action('wp_after_insert_post', [self::class, 'queue'], 40, 3);
         add_action('transition_post_status', [self::class, 'transition_guard'], 1, 3);
         add_action('admin_post_ncg_ed_review', [self::class, 'review']);
         add_action('admin_post_ncg_ed_propose', [self::class, 'propose']);
+    }
+    public static function publish_cap(array $all, array $required, array $args, $user): array {
+        if (Editorial::on('approvals') && $user && !Editorial::is_admin((int)$user->ID)) {
+            // Runtime-only; no global WordPress role changes. The Gutenberg UI
+            // offers Submit for Review instead of a misleading Publish button.
+            $all['publish_posts'] = false;
+        }
+        return $all;
     }
     public static function fingerprint($post): string {
         $p = get_post($post);
@@ -59,6 +68,11 @@ final class EditorialWorkflow {
     }
     public static function transition_guard(string $new, string $old, $post): void {
         if (self::$internal || $post->post_type !== 'post' || $new !== 'publish') return;
+        if ($old === 'future' && get_post_meta($post->ID, '_ncg_ed_schedule_authorized', true)
+            && strtotime($post->post_date_gmt . ' UTC') <= time()) {
+            Editorial::record('approved_scheduled_publication', (int)$post->ID);
+            return;
+        }
         if (Editorial::is_admin(get_current_user_id()) && !wp_doing_cron()) {
             Editorial::record('admin_direct_publication', (int)$post->ID, ['from'=>$old], 'warning');
             return;
@@ -76,6 +90,18 @@ final class EditorialWorkflow {
             try { add_post_meta($id, '_ncg_ed_creator', get_current_user_id() ?: (int)$post->post_author, true); }
             finally { Editorial::$applying = false; }
         }
+        $actor = get_current_user_id();
+        if ($actor > 0 && in_array($post->post_status, ['draft','pending'], true)) {
+            Editorial::$applying = true;
+            try {
+                $contributors = (array)get_post_meta($id, '_ncg_ed_contributors', true);
+                $contributors = array_values(array_unique(array_filter(array_map('intval', $contributors))));
+                if (!in_array($actor, $contributors, true)) {
+                    $contributors[] = $actor;
+                    update_post_meta($id, '_ncg_ed_contributors', $contributors);
+                }
+            } finally { Editorial::$applying = false; }
+        }
         if ($post->post_status !== 'pending') return;
         global $wpdb;
         $table = Editorial::table('reviews');
@@ -83,6 +109,9 @@ final class EditorialWorkflow {
         $creator = (int)get_post_meta($id, '_ncg_ed_creator', true) ?: (int)$post->post_author;
         $actor = get_current_user_id() ?: (int)$post->post_author;
         $policy = self::policy((int)$post->post_author, $creator, $actor);
+        foreach ((array)get_post_meta($id, '_ncg_ed_contributors', true) as $contributor) {
+            if (Editorial::is_editor((int)$contributor)) $policy = 'peer_editor';
+        }
         if ($prior) {
             $wpdb->update($table, [
                 'base_hash'=>self::fingerprint($post),
@@ -113,8 +142,10 @@ final class EditorialWorkflow {
         $post = get_post((int)$req->post_id);
         if (!$post) return false;
         $exclusions = [(int)$req->creator_id, (int)$req->submitter_id, (int)$post->post_author];
-        $extra = (array)get_post_meta($post->ID, '_ncg_ed_pending_editor_ids', true);
-        foreach ($extra as $id) $exclusions[] = (int)$id;
+        foreach (['_ncg_ed_pending_editor_ids','_ncg_ed_contributors'] as $key) {
+            $extra = (array)get_post_meta($post->ID, $key, true);
+            foreach ($extra as $id) $exclusions[] = (int)$id;
+        }
         if (in_array($reviewer, $exclusions, true)) return false;
         return $req->policy !== 'peer_editor' || Editorial::is_editor($reviewer);
     }

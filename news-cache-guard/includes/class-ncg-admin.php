@@ -8,14 +8,10 @@ if (!defined('ABSPATH')) exit;
 
 final class Admin {
     public function boot(): void {
-        add_action('admin_menu', [$this, 'menu']);
+        // The unified Dashboard owns the only Newsroom Guard admin menu.
         add_action('admin_init', [$this, 'register']);
         add_action('admin_post_ncg_sync_htaccess', [$this, 'sync_htaccess']);
         add_action('admin_post_ncg_cache_probe', [$this, 'cache_probe']);
-    }
-
-    public function menu(): void {
-        add_options_page('Newsroom Guard', 'Newsroom Guard', 'manage_options', 'news-cache-guard', [$this, 'render']);
     }
 
     public function register(): void {
@@ -35,7 +31,7 @@ final class Admin {
         if (!current_user_can('manage_options')) wp_die('Forbidden');
         check_admin_referer('ncg_sync_htaccess');
         $result = Htaccess::sync();
-        $url = add_query_arg(['page'=>'news-cache-guard','ncg_notice'=>$result['message']], admin_url('options-general.php'));
+        $url = Dashboard::url('settings', ['panel'=>'advanced', 'ncg_notice'=>$result['message']]);
         wp_safe_redirect($url);
         exit;
     }
@@ -44,7 +40,7 @@ final class Admin {
         if (!current_user_can('manage_options')) wp_die('Forbidden');
         check_admin_referer('ncg_cache_probe');
         $result = Counter::atomic_probe();
-        $url = add_query_arg(['page' => 'news-cache-guard', 'ncg_cache_probe' => $result['ok'] ? 'passed' : 'failed'], admin_url('options-general.php'));
+        $url = Dashboard::url('settings', ['panel'=>'advanced', 'ncg_cache_probe' => $result['ok'] ? 'passed' : 'failed']);
         wp_safe_redirect($url);
         exit;
     }

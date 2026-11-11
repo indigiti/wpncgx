@@ -266,6 +266,8 @@ jobs:
           '
       - name: Verify native GitHub update integration
         run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-github-updates.php
+      - name: Verify actual WordPress staff attribution, author changes and private Post History
+        run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-post-history.php
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

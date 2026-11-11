@@ -206,7 +206,7 @@ final class Editorial {
         if (self::on('approvals') || self::locked($post)) {
             unset($actions['edit'], $actions['inline hide-if-no-js']);
             if (self::on('approvals') && get_current_user_id() && (get_current_user_id() === (int)$post->post_author || current_user_can('edit_others_posts'))) {
-                $actions['ncg_proposal'] = '<a href="' . esc_url(admin_url('options-general.php?page=news-cache-guard&ncg_tab=editorial&view=propose&post=' . $post->ID)) . '">Propose revision</a>';
+                $actions['ncg_proposal'] = '<a href="' . esc_url(admin_url('admin.php?page=ncg-editorial-propose&post=' . $post->ID)) . '">Propose revision</a>';
             }
         }
         if (self::locked($post)) unset($actions['trash'], $actions['delete']);

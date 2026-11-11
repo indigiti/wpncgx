@@ -35,6 +35,8 @@ jobs:
         run: |
           php news-cache-guard/tests/dashboard.php
           php news-cache-guard/tests/counter-efficiency.php
+          php news-cache-guard/tests/guard-budget.php dry
+          php news-cache-guard/tests/guard-budget.php enforce
       - name: Unified admin and legacy URL regression
         run: php news-cache-guard/tests/navigation.php
       - name: Newsroom media policy security tests

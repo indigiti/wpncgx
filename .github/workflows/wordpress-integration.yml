@@ -237,6 +237,13 @@ jobs:
             }
             WP_CLI::success("Advanced origin save retained cache, privacy and bot settings");
           '
+      - name: Real WordPress media/category/content policy checks
+        run: |
+          set -euo pipefail
+          WP="php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test"
+          $WP option update ncg_module_switches '{"bot":1,"worker":1,"reports":1,"media_uploads":1,"category_creation":1,"featured_alt":1}' --format=json
+          $WP eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-media-policy.php
+          $WP option update ncg_module_switches '{"bot":1,"worker":1,"reports":1,"media_uploads":0,"category_creation":0,"featured_alt":0}' --format=json
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

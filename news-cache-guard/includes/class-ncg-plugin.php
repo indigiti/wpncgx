@@ -22,6 +22,7 @@ final class Plugin {
         $this->admin = new Admin();
         WorkerGuard::boot();
         Editorial::boot();
+        MediaPolicy::boot();
         if (is_admin()) { EditorialAdmin::boot(); Dashboard::boot(); }
         $this->guard->boot();
         $this->purger->boot();

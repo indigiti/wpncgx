@@ -61,7 +61,7 @@ final class EditorialAdmin {
         if (!current_user_can('manage_options')) wp_die('Forbidden.');
         $s = Editorial::settings();
         $view = isset($_GET['view']) ? sanitize_key(wp_unslash($_GET['view'])) : 'settings';
-        echo '<div class="wrap"><h1>News Cache Guard <small style="font-size:13px">Editorial & Publishing</small></h1>';
+        echo '<div class="wrap"><h1>Newsroom Guard <small style="font-size:13px">Editorial & Publishing</small></h1>';
         self::tabs('editorial');
         echo '<p>Independent editorial controls. Cache protection and public page caching are unaffected by every switch below.</p>';
         echo '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0">';

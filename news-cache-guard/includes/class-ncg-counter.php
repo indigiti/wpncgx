@@ -13,27 +13,15 @@ final class Counter {
         return function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache();
     }
 
-    /**
-     * Atomic hot path: existing keys need ONE cache operation (INCR).
-     *
-     * A missing key returns false from INCR, so attempt an atomic ADD. If
-     * another worker wins ADD between our operations, retry INCR once.
-     * Do not use GET+SET; concurrent requests must not lose increments.
-     * All backend errors still fail open (0), as before.
-     */
-    private static function atomic_increment_key(string $key, int $ttl): int {
-        $next = wp_cache_incr($key, 1, self::GROUP);
-        if ($next !== false) return (int)$next;
-        if (wp_cache_add($key, 1, self::GROUP, $ttl)) return 1;
-        $next = wp_cache_incr($key, 1, self::GROUP);
-        return $next === false ? 0 : (int)$next;
-    }
-
     public static function increment(string $name, string $identity, int $window): int {
         if (!self::available()) return 0;
         $bucket = intdiv(time(), max(1, $window));
         $key = self::key('cnt', $name, $identity, (string)$bucket);
-        return self::atomic_increment_key($key, $window + 5);
+        if (wp_cache_add($key, 1, self::GROUP, $window + 5)) return 1;
+        $n = wp_cache_incr($key, 1, self::GROUP);
+        // Do not replace failed atomic increments with non-atomic get/set:
+        // simultaneous PHP workers could overwrite each other's counts.
+        return $n === false ? 0 : (int)$n;
     }
 
     public static function increment_unique(string $name, string $identity, string $value, int $window): int {
@@ -42,7 +30,9 @@ final class Counter {
         $marker = self::key('uniq', $name, $identity, (string)$bucket, md5($value));
         $countKey = self::key('ucnt', $name, $identity, (string)$bucket);
         if (wp_cache_add($marker, 1, self::GROUP, $window + 5)) {
-            return self::atomic_increment_key($countKey, $window + 5);
+            if (wp_cache_add($countKey, 1, self::GROUP, $window + 5)) return 1;
+            $n = wp_cache_incr($countKey, 1, self::GROUP);
+            return $n === false ? 0 : (int)$n;
         }
         $n = wp_cache_get($countKey, self::GROUP);
         return $n === false ? 0 : (int)$n;
@@ -66,7 +56,9 @@ final class Counter {
     public static function stat(string $name, int $ttl = 86400): int {
         if (!self::available()) return 0;
         $key = self::key('stat', $name, gmdate('Ymd'));
-        return self::atomic_increment_key($key, $ttl);
+        if (wp_cache_add($key, 1, self::GROUP, $ttl)) return 1;
+        $n = wp_cache_incr($key, 1, self::GROUP);
+        return $n === false ? 0 : (int)$n;
     }
 
     public static function stat_value(string $name): int {

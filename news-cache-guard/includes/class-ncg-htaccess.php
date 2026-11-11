@@ -8,6 +8,8 @@ if (!defined('ABSPATH')) exit;
 
 final class Htaccess {
     public const MARKER = 'News Cache Guard';
+    private static string $dropCacheKey = '';
+    private static array $dropCache = [];
 
     public static function sync(): array {
         if (!function_exists('insert_with_markers')) {
@@ -60,7 +62,13 @@ final class Htaccess {
     }
 
     public static function matches_drop_key(string $key): bool {
-        foreach (self::safe_drop_keys(Settings::lines('drop_query_keys')) as $rule) {
+        $blog = function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;
+        $cacheKey = $blog . ':' . Settings::revision();
+        if (self::$dropCacheKey !== $cacheKey) {
+            self::$dropCache = self::safe_drop_keys(Settings::lines('drop_query_keys'));
+            self::$dropCacheKey = $cacheKey;
+        }
+        foreach (self::$dropCache as $rule) {
             if (substr($rule, -1) === '*') {
                 if (strpos($key, substr($rule, 0, -1)) === 0) return true;
             } elseif ($rule === $key) {

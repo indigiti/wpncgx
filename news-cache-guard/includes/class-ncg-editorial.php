@@ -38,7 +38,11 @@ final class Editorial {
         $out['lock_hours'] = max(0, min(720, (int)($raw['lock_hours'] ?? 4)));
         $out['retention_days'] = max(30, min(3650, (int)($raw['retention_days'] ?? 180)));
         $ids = preg_split('/[\\s,]+/', (string)($raw['bypass_ids'] ?? ''));
-        $out['bypass_ids'] = implode(',', array_unique(array_filter(array_map('absint', $ids))));
+        $valid_ids = [];
+        foreach ($ids as $id) {
+            if ($id !== '' && ctype_digit((string)$id) && (int)$id > 0) $valid_ids[] = (int)$id;
+        }
+        $out['bypass_ids'] = implode(',', array_unique($valid_ids));
         return $out;
     }
     public static function table(string $kind): string {

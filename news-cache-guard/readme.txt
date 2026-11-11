@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.1.0-rc1
 License: GPLv2 or later
 
 Origin protection and shared LiteSpeed cache controls for high-traffic WordPress news sites.
@@ -59,6 +59,14 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.1.0-rc1 =
+* Optional Editorial & Publishing settings tab (master OFF on upgrade).
+* Independent Audit / Security / Approvals / Four-Hour Lock controls; exempt ID 529 affects lock only.
+* Editor-to-Editor approval and protected live-article revisions with SEO field review.
+* Real WordPress REST, cron, metadata and permissions integration checks in CI.
+* Staging Cloudways/LiteSpeed validation required before production merge; see EDITORIAL-MODULE.md.
+
 
 = 1.0.6 =
 * Optional opt-in LiteSpeed `CacheIgnoreCacheControl On` for reuse of eligible cached articles despite client request no-cache headers. Default OFF, request-wide, not bot-specific; no response-side Force Public override.

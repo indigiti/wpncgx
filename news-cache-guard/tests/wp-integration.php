@@ -12,7 +12,7 @@ function ncg_assert($condition, $description) {
     echo "PASS: " . $description . "\n";
 }
 $admin = get_user_by('login', 'admin');
-ncg_assert($admin && is_plugin_active('news-cache-guard/news-cache-guard.php'), 'WordPress and News Cache Guard active');
+ncg_assert($admin && defined('NCG_VERSION'), 'WordPress and News Cache Guard active');
 
 $editor_a = wp_create_user('ncg-editor-a', wp_generate_password(24), 'ea@example.invalid');
 $editor_b = wp_create_user('ncg-editor-b', wp_generate_password(24), 'eb@example.invalid');

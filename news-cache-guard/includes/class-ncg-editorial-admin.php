@@ -194,7 +194,7 @@ final class EditorialAdmin {
         echo '<input type="hidden" name="snapshot_hash" value="' . esc_attr($req->base_hash) . '">';
         wp_nonce_field('ncg_ed_review');
         echo '<label class="nrg-review-note">Review note<textarea name="note" rows="3" placeholder="Required for rejection or requested changes"></textarea></label>';
-        echo '<div class="nrg-review-actions"><button name="decision" value="approve" class="button button-primary">Approve & Publish</button> ';
+        echo '<div class="nrg-review-actions"><button name="decision" value="approve" class="button button-primary">Approve &amp; Publish</button> ';
         echo '<button name="decision" value="changes" class="button">Request Changes</button> ';
         echo '<button name="decision" value="reject" class="button">Reject</button></div></form>';
     }

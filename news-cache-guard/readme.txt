@@ -61,7 +61,7 @@ More-specific CIDRs win.
 == Changelog ==
 
 = 1.2.0-rc8 =
-* Optimize existing persistent Redis counters with atomic INCR-first operations; preserve contention safety and fail-open operation.
+* Preserve expiring Redis counter initialization and skip redundant unique-URL accounting after a definitive enforced miss-budget violation; full dry-run telemetry remains.
 * Reuse recent history rows to avoid an extra database query when displaying the most recent editor.
 * Show honest read-only PHP memory, elapsed time and query-count snapshots in the administrator cache panel.
 

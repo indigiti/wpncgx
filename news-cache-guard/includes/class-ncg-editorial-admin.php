@@ -98,7 +98,7 @@ final class EditorialAdmin {
         echo '</form><hr><h2>Operational safeguards</h2><p>Turning a group OFF prevents new enforcement or events, but preserves existing audit records and review requests. Turning Approvals OFF does not automatically publish pending articles. The master switch never changes cache, LiteSpeed or Redis settings.</p>';
         echo '<p><strong>Separation of duties:</strong> Administrators retain an emergency publication exception; this is audited when Audit Logging is on. WordPress administrators can also deactivate plugins, so external governance is required for absolute enforcement.</p>';
     }
-    private static function queue(): void {
+    public static function queue(): void {
         if (!Editorial::on('approvals')) { echo '<p>Enable Master and Approval group to process requests.</p>'; return; }
         global $wpdb;
         $table = Editorial::table('reviews');

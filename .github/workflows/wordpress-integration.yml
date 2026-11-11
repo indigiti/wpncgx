@@ -279,6 +279,8 @@ jobs:
           php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-post-history.php
       - name: Verify rc7 request-local settings and post-save cache invalidation
         run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-performance.php
+      - name: Verify P3 worker and cron diagnostics are read-only
+        run: php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval-file /tmp/ncg-wp-test/wp-content/plugins/news-cache-guard/tests/wp-worker-diagnostics.php
       - name: Explain limits
         run: |
           echo "PASS: WordPress API integration on ephemeral MariaDB test site."

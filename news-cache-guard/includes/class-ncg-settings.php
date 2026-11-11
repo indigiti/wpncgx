@@ -8,6 +8,28 @@ if (!defined('ABSPATH')) exit;
 
 final class Settings {
     public const OPTION = 'ncg_settings';
+    /** Request-local configuration; separate entries avoid cross-site leakage on Multisite. */
+    private static array $requestValues = [];
+    private static array $requestLines = [];
+    private static bool $booted = false;
+
+    public static function boot(): void {
+        if (self::$booted) return;
+        self::$booted = true;
+        foreach (['updated_option', 'added_option', 'deleted_option'] as $hook) {
+            add_action($hook, [self::class, 'invalidate'], 10, 1);
+        }
+    }
+
+    public static function invalidate(string $option = self::OPTION): void {
+        if ($option !== self::OPTION) return;
+        self::$requestValues = [];
+        self::$requestLines = [];
+    }
+
+    private static function blog_key(): int {
+        return function_exists('get_current_blog_id') ? (int)get_current_blog_id() : 0;
+    }
 
     public static function defaults(): array {
         return [
@@ -56,6 +78,8 @@ final class Settings {
     }
 
     public static function get_all(): array {
+        $blog = self::blog_key();
+        if (isset(self::$requestValues[$blog])) return self::$requestValues[$blog];
         $saved = get_option(self::OPTION, []);
         if (!is_array($saved)) $saved = [];
         $all = array_merge(self::defaults(), $saved);
@@ -65,7 +89,7 @@ final class Settings {
         // Strict fallback cap, including sites with an older saved value of 10.
         $all['search_limit'] = 3;
         $all['search_window'] = 60;
-        return $all;
+        return self::$requestValues[$blog] = $all;
     }
 
     public static function get(string $key, $default = null) {
@@ -129,9 +153,12 @@ final class Settings {
     }
 
     public static function lines(string $key): array {
+        $blog = self::blog_key();
+        if (isset(self::$requestLines[$blog][$key])) return self::$requestLines[$blog][$key];
         $raw = trim((string)self::get($key, ''));
-        if ($raw === '') return [];
-        return array_values(array_filter(array_map('trim', preg_split('/\R/', $raw) ?: [])));
+        $lines = $raw === '' ? [] : array_values(array_filter(array_map('trim', preg_split('/\R/', $raw) ?: [])));
+        self::$requestLines[$blog][$key] = $lines;
+        return $lines;
     }
 
     private static function default_cloudflare_ranges(): string {

@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc8
+Stable tag: 1.2.0-rc9
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,11 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc9 =
+* Show bounded, read-only Worker Guard queue and WP-Cron readiness diagnostics to authorised administrators.
+* Inspect at most one oldest pending Action Scheduler action; indicate potential delays without starting/stopping any jobs.
+* Warn when both WP-Cron page-triggering and Action Scheduler async loopbacks are disabled, without claiming server cron is working.
 
 = 1.2.0-rc8 =
 * Preserve expiring Redis counter initialization and skip redundant unique-URL accounting after a definitive enforced miss-budget violation; full dry-run telemetry remains.

@@ -28,3 +28,5 @@ jobs:
           php news-cache-guard/tests/worker-guard.php
       - name: Editorial settings and capability unit checks
         run: php news-cache-guard/tests/editorial.php
+      - name: Newsroom Guard display name and upgrade compatibility
+        run: php news-cache-guard/tests/branding.php

@@ -6,6 +6,26 @@ if (!defined('ABSPATH')) exit;
 final class EditorialAdmin {
     public static function boot(): void {
         add_action('admin_init', [self::class, 'register']);
+        add_action('admin_menu', [self::class, 'editor_menus']);
+    }
+    public static function editor_menus(): void {
+        add_submenu_page('edit.php', 'Editorial Reviews', 'Editorial Reviews',
+            'edit_others_posts', 'ncg-editorial-reviews', [self::class, 'render_reviews']);
+        // Hidden screen reachable from a published post's "Propose revision" row action.
+        add_submenu_page(null, 'Propose Editorial Revision', 'Propose Editorial Revision',
+            'edit_posts', 'ncg-editorial-propose', [self::class, 'render_proposal']);
+    }
+    public static function render_reviews(): void {
+        if (!current_user_can('edit_others_posts')) wp_die('Forbidden.');
+        echo '<div class="wrap"><h1>Editorial Approval Queue</h1>';
+        self::queue();
+        echo '</div>';
+    }
+    public static function render_proposal(): void {
+        if (!current_user_can('edit_posts')) wp_die('Forbidden.');
+        echo '<div class="wrap">';
+        self::proposal();
+        echo '</div>';
     }
     public static function register(): void {
         register_setting('ncg_editorial', Editorial::OPTION, [

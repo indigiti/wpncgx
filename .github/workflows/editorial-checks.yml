@@ -27,6 +27,9 @@ jobs:
           php news-cache-guard/tests/regression.php
           php news-cache-guard/tests/mu-search-guard.php
           php news-cache-guard/tests/worker-guard.php
+          php news-cache-guard/tests/worker-diagnostics.php unavailable
+          php news-cache-guard/tests/worker-diagnostics.php overdue
+          php news-cache-guard/tests/worker-diagnostics.php both-off
       - name: Editorial settings and capability unit checks
         run: |
           php news-cache-guard/tests/editorial.php

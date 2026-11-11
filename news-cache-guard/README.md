@@ -58,6 +58,10 @@ Newsroom Guard now integrates with native **WordPress Plugins → Update now** f
 
 The upload guard now supports an administrator-defined **1–20,480 KB** size limit and allowed file types: **JPG/JPEG, WebP, PNG, GIF or PDF**. Defaults remain 500 KB and JPG/JPEG + WebP for existing installations. Its ON/OFF control remains separate, OFF by default. Configure under **Newsroom Guard → Module Manager → Configure file types & maximum size**. The uploaded MediaFlow 0.2.5 archive remains a separate image-delivery plugin, not bundled or installed with Newsroom Guard. See [MEDIA-POLICIES.md](MEDIA-POLICIES.md).
 
+## Post History and Editorial Activity (staging)
+
+An independent, passive staff attribution log records the real WordPress account that creates, edits, publishes, or changes the public author of a news article. The existing theme and WordPress Author field are untouched. Editors with sufficient permissions see **Newsroom Guard — Post History** on each post; Administrators can search **Newsroom Guard → Editorial Activity**. Switch under **Module Manager**; approvals and locks are not enabled by this feature. See [POST-HISTORY.md](POST-HISTORY.md) for limitations, privacy and staging checks.
+
 ## Future work and module roadmap
 
 The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

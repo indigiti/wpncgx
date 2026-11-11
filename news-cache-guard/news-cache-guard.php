@@ -39,10 +39,6 @@ require_once NCG_DIR . 'includes/class-ncg-purger.php';
 require_once NCG_DIR . 'includes/class-ncg-guard.php';
 require_once NCG_DIR . 'includes/class-ncg-admin.php';
 require_once NCG_DIR . 'includes/class-ncg-worker-guard.php';
-// Diagnostic APIs never load on anonymous public traffic.
-if (is_admin()) {
-    require_once NCG_DIR . 'includes/class-ncg-worker-diagnostics.php';
-}
 require_once NCG_DIR . 'includes/class-ncg-plugin.php';
 require_once NCG_DIR . 'includes/class-ncg-editorial.php';
 require_once NCG_DIR . 'includes/class-ncg-post-history.php';

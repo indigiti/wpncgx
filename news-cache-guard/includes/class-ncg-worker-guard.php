@@ -169,6 +169,10 @@ final class WorkerGuard {
             'server_cron'=>'External server cron',
             'risk'=>'Operational check',
         ];
+        // Load only when an authorised administrator opens this tools page.
+        if (!class_exists(WorkerDiagnostics::class, false)) {
+            require_once __DIR__ . '/class-ncg-worker-diagnostics.php';
+        }
         foreach (WorkerDiagnostics::snapshot() as $key=>$value) {
             echo '<tr><th scope="row">' . esc_html($diagnosticLabels[$key] ?? $key) .
                 '</th><td>' . esc_html($value) . '</td></tr>';

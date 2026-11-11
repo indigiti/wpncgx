@@ -356,7 +356,11 @@ final class Dashboard {
     private static function approvals(): void {
         self::card_open('Independent editorial review', 'Contributor and Author submissions require an independent Editor; Editor submissions require a different Editor');
         if (!Editorial::on('approvals')) self::note('Approvals are disabled. Enable the editorial master and Approvals group in Module Manager.', 'warning');
-        else EditorialAdmin::queue();
+        else {
+            $review_id=absint($_GET['review_id'] ?? 0);
+            if ($review_id) EditorialAdmin::review_detail($review_id);
+            else EditorialAdmin::queue();
+        }
         self::card_close();
     }
 

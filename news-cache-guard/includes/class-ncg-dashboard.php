@@ -28,10 +28,12 @@ final class Dashboard {
 
     public static function boot(): void {
         add_action('admin_menu', [self::class, 'menu']);
+        add_action('admin_init', [self::class, 'redirect_legacy_pages'], 1);
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('admin_post_nrg_save_modules', [self::class, 'save_modules']);
         add_action('admin_post_nrg_save_core', [self::class, 'save_core']);
         add_action('admin_post_nrg_save_lock', [self::class, 'save_lock']);
+        add_action('admin_post_nrg_save_advanced', [self::class, 'save_advanced']);
         add_action('admin_post_nrg_export_events', [self::class, 'export_events']);
     }
 
@@ -39,12 +41,40 @@ final class Dashboard {
         add_menu_page('Newsroom Guard', 'Newsroom Guard', 'manage_options', self::SLUG,
             [self::class, 'render'], 'dashicons-shield-alt', 58);
         add_submenu_page(self::SLUG, 'Overview', 'Overview', 'manage_options', self::SLUG, [self::class, 'render']);
-        add_submenu_page(self::SLUG, 'Module Manager', 'Module Manager', 'manage_options',
-            'newsroom-modules', [self::class, 'module_redirect']);
+        // The Module Manager is part of the unified dashboard's sidebar.
+        // Do not register a second, misleading WordPress admin submenu.
     }
 
-    public static function module_redirect(): void {
-        wp_safe_redirect(self::url('settings'));
+    /**
+     * Backward-compatible bookmarks redirect before WordPress sends an admin header.
+     * There is exactly one Newsroom Guard settings interface. These old slugs
+     * remain harmless redirects, never independent forms or menus.
+     */
+    public static function redirect_legacy_pages(): void {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
+        $page = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        if (!in_array($page, ['news-cache-guard', 'newsroom-modules'], true)) return;
+        if (!current_user_can('manage_options')) return;
+
+        if ($page === 'newsroom-modules') {
+            $dest = self::url('settings');
+        } else {
+            $legacy_tab = sanitize_key(wp_unslash($_GET['ncg_tab'] ?? 'cache'));
+            $view = sanitize_key(wp_unslash($_GET['view'] ?? 'settings'));
+            if ($legacy_tab !== 'editorial') {
+                $args = ['panel'=>'advanced'];
+                foreach (['ncg_notice','ncg_cache_probe'] as $key) {
+                    if (isset($_GET[$key])) {
+                        $args[$key] = sanitize_text_field(wp_unslash($_GET[$key]));
+                    }
+                }
+                $dest = self::url('settings', $args);
+            } else {
+                $tab = ['queue'=>'approvals', 'audit'=>'audit', 'alerts'=>'security'][$view] ?? 'settings';
+                $dest = self::url($tab);
+            }
+        }
+        wp_safe_redirect($dest, 302);
         exit;
     }
 
@@ -97,9 +127,15 @@ final class Dashboard {
         echo '<main class="nrg-main"><header class="nrg-topbar"><div class="nrg-breadcrumb">Newsroom Guard <span>/</span> ' .
             esc_html($items[$tab][0]) . '</div><div class="nrg-top-actions">';
         echo '<span class="nrg-top-site">' . esc_html(get_bloginfo('name')) . '</span>';
-        echo '<a class="nrg-small-btn" href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Advanced settings</a>';
+        echo '<a class="nrg-small-btn" href="' . esc_url(self::url('settings',['panel'=>'advanced'])) . '">Advanced controls</a>';
         echo '</div></header><div class="nrg-content">';
         if (isset($_GET['nrg_review_notice'])) self::note(sanitize_text_field(wp_unslash($_GET['nrg_review_notice'])), 'success');
+        if (isset($_GET['ncg_notice'])) self::note(sanitize_text_field(wp_unslash($_GET['ncg_notice'])), 'neutral');
+        if (isset($_GET['ncg_cache_probe'])) {
+            $state = sanitize_key(wp_unslash($_GET['ncg_cache_probe']));
+            if ($state === 'passed') self::note('Object cache atomic probe passed for this request. Cross-worker Redis testing is separate.', 'success');
+            elseif ($state === 'failed') self::note('Object cache atomic probe failed; verify Redis before activating strict limits.', 'warning');
+        }
         if (isset($_GET['nrg_notice'])) {
             $message = sanitize_key(wp_unslash($_GET['nrg_notice']));
             $messages = [
@@ -493,6 +529,10 @@ final class Dashboard {
     }
 
     private static function settings(): void {
+        if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'advanced') {
+            self::advanced();
+            return;
+        }
         $e=Editorial::settings();
         echo '<div class="nrg-columns">';
         self::card_open('Module Manager','Changes are saved server-side; each supported module executes only when enabled');
@@ -516,7 +556,7 @@ final class Dashboard {
         echo '<div class="nrg-divider"></div><h3>AI Intelligence</h3><p>Not implemented. No pretend AI switch is shown.</p>';
         echo '<div class="nrg-divider"></div><h3>Advanced origin rules</h3>';
         echo '<p>Existing CIDR rules, proxy trust, XML-RPC and diagnostic tools are preserved.</p>';
-        echo '<a class="nrg-text-link" href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Open advanced settings →</a>';
+        echo '<a class="nrg-text-link" href="' . esc_url(self::url('settings', ['panel'=>'advanced'])) . '">Open advanced controls →</a>';
         self::card_close();echo '</div>';
     }
 

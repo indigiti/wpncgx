@@ -185,8 +185,10 @@ final class Editorial {
     public static function map_meta_cap(array $caps, string $cap, int $id, array $args): array {
         if (!in_array($cap, ['edit_post','delete_post'], true) || empty($args[0])) return $caps;
         $post = get_post((int)$args[0]);
-        if (!$post || $post->post_type !== 'post' || $post->post_status !== 'publish' || self::bypass($id)) return $caps;
-        if (($cap === 'edit_post' && self::on('approvals')) || self::locked($post)) return ['do_not_allow'];
+        if (!$post || $post->post_type !== 'post' || $post->post_status !== 'publish') return $caps;
+        // A lock exception does not bypass independent approval.
+        if ($cap === 'edit_post' && self::on('approvals') && !self::is_admin($id)) return ['do_not_allow'];
+        if (self::locked($post) && !self::bypass($id)) return ['do_not_allow'];
         return $caps;
     }
     public static function pre_trash($check, $post) {
@@ -204,14 +206,15 @@ final class Editorial {
         return $check;
     }
     public static function row_actions(array $actions, $post): array {
-        if ($post->post_type !== 'post' || $post->post_status !== 'publish' || self::bypass(get_current_user_id())) return $actions;
-        if (self::on('approvals') || self::locked($post)) {
+        if ($post->post_type !== 'post' || $post->post_status !== 'publish') return $actions;
+        $actor = get_current_user_id();
+        if ((self::on('approvals') && !self::is_admin($actor)) || (self::locked($post) && !self::bypass($actor))) {
             unset($actions['edit'], $actions['inline hide-if-no-js']);
-            if (self::on('approvals') && get_current_user_id() && (get_current_user_id() === (int)$post->post_author || current_user_can('edit_others_posts'))) {
+            if (self::on('approvals') && $actor && ($actor === (int)$post->post_author || current_user_can('edit_others_posts'))) {
                 $actions['ncg_proposal'] = '<a href="' . esc_url(admin_url('admin.php?page=ncg-editorial-propose&post=' . $post->ID)) . '">Propose revision</a>';
             }
         }
-        if (self::locked($post)) unset($actions['trash'], $actions['delete']);
+        if (self::locked($post) && !self::bypass($actor)) unset($actions['trash'], $actions['delete']);
         return $actions;
     }
     public static function transition(string $new, string $old, $p): void {

@@ -25,13 +25,23 @@ final class EditorialWorkflow {
         }
         return $all;
     }
+    private static function seo_keys(): array {
+        return ['_yoast_wpseo_title','_yoast_wpseo_metadesc','_yoast_wpseo_canonical',
+            'rank_math_title','rank_math_description','rank_math_canonical_url'];
+    }
+    private static function seo_snapshot(int $post_id): array {
+        $out = [];
+        foreach (self::seo_keys() as $key) $out[$key] = (string)get_post_meta($post_id, $key, true);
+        return $out;
+    }
     public static function fingerprint($post): string {
         $p = get_post($post);
         if (!$p) return '';
         return hash('sha256', wp_json_encode([
             $p->post_title, $p->post_content, $p->post_excerpt, $p->post_name,
             (int)$p->post_author, wp_get_post_categories($p->ID),
-            wp_get_post_tags($p->ID, ['fields'=>'ids']), (int)get_post_thumbnail_id($p->ID)
+            wp_get_post_tags($p->ID, ['fields'=>'ids']), (int)get_post_thumbnail_id($p->ID),
+            self::seo_snapshot((int)$p->ID)
         ]));
     }
     private static function snapshot($p): array {
@@ -41,6 +51,7 @@ final class EditorialWorkflow {
             'categories'=>wp_get_post_categories($p->ID),
             'tags'=>wp_get_post_tags($p->ID, ['fields'=>'ids']),
             'thumbnail'=>(int)get_post_thumbnail_id($p->ID),
+            'seo'=>self::seo_snapshot((int)$p->ID),
         ];
     }
     private static function policy(int $author, int $creator, int $submitter): string {
@@ -181,7 +192,13 @@ final class EditorialWorkflow {
             'categories'=>array_values(array_filter(array_map('absint', (array)($_POST['categories'] ?? [])))),
             'tags'=>wp_get_post_tags($id, ['fields'=>'ids']),
             'thumbnail'=>absint($_POST['thumbnail'] ?? 0),
+            'seo'=>[],
         ];
+        foreach (self::seo_keys() as $key) {
+            $value = (string)wp_unslash($_POST['seo'][$key] ?? '');
+            $payload['seo'][$key] = substr($key, -10) === '_canonical' || $key === 'rank_math_canonical_url'
+                ? esc_url_raw($value) : sanitize_text_field($value);
+        }
         if (!$payload['title']) self::redirect('Headline cannot be empty.');
         if ($payload['thumbnail'] && get_post_type($payload['thumbnail']) !== 'attachment') self::redirect('Invalid featured image.');
         $creator = (int)get_post_meta($id, '_ncg_ed_creator', true) ?: (int)$p->post_author;
@@ -257,8 +274,18 @@ final class EditorialWorkflow {
         try {
             $result = wp_update_post(wp_slash($fields), true);
             if (!is_wp_error($result) && $request->kind === 'revision') {
-                if (!empty($data['thumbnail'])) set_post_thumbnail($p->ID, absint($data['thumbnail']));
-                else delete_post_thumbnail($p->ID);
+                // Apply audited SEO, term and image changes only after the
+                // independently approved article update succeeds.
+                Editorial::$applying = true;
+                try {
+                    if (!empty($data['thumbnail'])) set_post_thumbnail($p->ID, absint($data['thumbnail']));
+                    else delete_post_thumbnail($p->ID);
+                    foreach (self::seo_keys() as $key) {
+                        $value = (string)($data['seo'][$key] ?? '');
+                        if ($value !== '') update_post_meta($p->ID, $key, $value);
+                        else delete_post_meta($p->ID, $key);
+                    }
+                } finally { Editorial::$applying = false; }
             }
         } finally { self::$internal = false; }
         return $result;

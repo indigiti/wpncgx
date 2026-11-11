@@ -28,10 +28,12 @@ final class Dashboard {
 
     public static function boot(): void {
         add_action('admin_menu', [self::class, 'menu']);
+        add_action('admin_init', [self::class, 'redirect_legacy_pages'], 1);
         add_action('admin_enqueue_scripts', [self::class, 'assets']);
         add_action('admin_post_nrg_save_modules', [self::class, 'save_modules']);
         add_action('admin_post_nrg_save_core', [self::class, 'save_core']);
         add_action('admin_post_nrg_save_lock', [self::class, 'save_lock']);
+        add_action('admin_post_nrg_save_advanced', [self::class, 'save_advanced']);
         add_action('admin_post_nrg_export_events', [self::class, 'export_events']);
     }
 
@@ -39,12 +41,40 @@ final class Dashboard {
         add_menu_page('Newsroom Guard', 'Newsroom Guard', 'manage_options', self::SLUG,
             [self::class, 'render'], 'dashicons-shield-alt', 58);
         add_submenu_page(self::SLUG, 'Overview', 'Overview', 'manage_options', self::SLUG, [self::class, 'render']);
-        add_submenu_page(self::SLUG, 'Module Manager', 'Module Manager', 'manage_options',
-            'newsroom-modules', [self::class, 'module_redirect']);
+        // The Module Manager is part of the unified dashboard's sidebar.
+        // Do not register a second, misleading WordPress admin submenu.
     }
 
-    public static function module_redirect(): void {
-        wp_safe_redirect(self::url('settings'));
+    /**
+     * Backward-compatible bookmarks redirect before WordPress sends an admin header.
+     * There is exactly one Newsroom Guard settings interface. These old slugs
+     * remain harmless redirects, never independent forms or menus.
+     */
+    public static function redirect_legacy_pages(): void {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
+        $page = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        if (!in_array($page, ['news-cache-guard', 'newsroom-modules'], true)) return;
+        if (!current_user_can('manage_options')) return;
+
+        if ($page === 'newsroom-modules') {
+            $dest = self::url('settings');
+        } else {
+            $legacy_tab = sanitize_key(wp_unslash($_GET['ncg_tab'] ?? 'cache'));
+            $view = sanitize_key(wp_unslash($_GET['view'] ?? 'settings'));
+            if ($legacy_tab !== 'editorial') {
+                $args = ['panel'=>'advanced'];
+                foreach (['ncg_notice','ncg_cache_probe'] as $key) {
+                    if (isset($_GET[$key])) {
+                        $args[$key] = sanitize_text_field(wp_unslash($_GET[$key]));
+                    }
+                }
+                $dest = self::url('settings', $args);
+            } else {
+                $tab = ['queue'=>'approvals', 'audit'=>'audit', 'alerts'=>'security'][$view] ?? 'settings';
+                $dest = self::url($tab);
+            }
+        }
+        wp_safe_redirect($dest, 302);
         exit;
     }
 
@@ -97,9 +127,15 @@ final class Dashboard {
         echo '<main class="nrg-main"><header class="nrg-topbar"><div class="nrg-breadcrumb">Newsroom Guard <span>/</span> ' .
             esc_html($items[$tab][0]) . '</div><div class="nrg-top-actions">';
         echo '<span class="nrg-top-site">' . esc_html(get_bloginfo('name')) . '</span>';
-        echo '<a class="nrg-small-btn" href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Advanced settings</a>';
+        echo '<a class="nrg-small-btn" href="' . esc_url(self::url('settings',['panel'=>'advanced'])) . '">Advanced controls</a>';
         echo '</div></header><div class="nrg-content">';
         if (isset($_GET['nrg_review_notice'])) self::note(sanitize_text_field(wp_unslash($_GET['nrg_review_notice'])), 'success');
+        if (isset($_GET['ncg_notice'])) self::note(sanitize_text_field(wp_unslash($_GET['ncg_notice'])), 'neutral');
+        if (isset($_GET['ncg_cache_probe'])) {
+            $state = sanitize_key(wp_unslash($_GET['ncg_cache_probe']));
+            if ($state === 'passed') self::note('Object cache atomic probe passed for this request. Cross-worker Redis testing is separate.', 'success');
+            elseif ($state === 'failed') self::note('Object cache atomic probe failed; verify Redis before activating strict limits.', 'warning');
+        }
         if (isset($_GET['nrg_notice'])) {
             $message = sanitize_key(wp_unslash($_GET['nrg_notice']));
             $messages = [
@@ -492,7 +528,151 @@ final class Dashboard {
         self::card_close();
     }
 
+
+    /**
+     * The settings below used to exist only on the old options-general page.
+     * Keep every advanced origin/cache field inside Newsroom Guard, rather than
+     * leaving hidden controls or a second full dashboard behind.
+     */
+    private static function advanced_select(string $key, string $label, string $selected, array $choices, string $help=''): void {
+        echo '<label class="nrg-field"><span><strong>' . esc_html($label) . '</strong>';
+        if ($help !== '') echo '<small>' . esc_html($help) . '</small>';
+        echo '</span><select name="' . esc_attr($key) . '" class="nrg-advanced-select">';
+        foreach ($choices as $value=>$name) {
+            echo '<option value="' . esc_attr((string)$value) . '" ' .
+                selected($selected, (string)$value, false) . '>' . esc_html($name) . '</option>';
+        }
+        echo '</select></label>';
+    }
+
+    private static function advanced_lines(string $key, string $label, string $value, string $help=''): void {
+        echo '<label class="nrg-field nrg-advanced-lines"><span><strong>' . esc_html($label) . '</strong>';
+        if ($help !== '') echo '<small>' . esc_html($help) . '</small>';
+        echo '</span><textarea name="' . esc_attr($key) .
+            '" rows="5" spellcheck="false" class="nrg-advanced-textarea">' .
+            esc_textarea($value) . '</textarea></label>';
+    }
+
+    private static function advanced(): void {
+        $s = Settings::get_all();
+        echo '<p><a class="nrg-text-link" href="' . esc_url(self::url('settings')) . '">← Back to Module Manager</a></p>';
+        self::note('All advanced cache, origin, proxy, scanner and XML-RPC settings are now part of this dashboard. Values are preserved when saving unrelated modules.');
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" class="nrg-advanced-form">';
+
+        self::card_open('Origin protection policies','Thresholds and timing for requests reaching WordPress PHP');
+        self::checkbox('emergency_mode', 'Emergency origin protection', !empty($s['emergency_mode']),
+            'Halve the origin threshold while this mode is on.');
+        self::advanced_select('default_policy','Default protection policy',(string)$s['default_policy'],
+            ['monitor'=>'Monitor only','safe_shared'=>'Safe shared cache','cache_only'=>'Cache-only / limit PHP-origin requests']);
+        foreach ([
+            ['origin_window','Origin window (seconds)',5,3600],
+            ['protection_duration','Protection duration (seconds)',10,86400],
+            ['miss_limit','Protected cache-MISS allowance',1,10000],
+            ['miss_window','MISS window (seconds)',5,3600],
+            ['unique_url_limit','Unique uncached URL allowance',1,10000],
+            ['unique_url_window','Unique URL window (seconds)',5,3600],
+            ['window_404','404 tracking window (seconds)',5,3600],
+            ['rest_window','REST tracking window (seconds)',5,3600],
+            ['retry_after','Retry-After header (seconds)',1,3600]
+        ] as $row) {
+            self::number($row[0],$row[1],(int)$s[$row[0]],$row[2],$row[3]);
+        }
+        self::advanced_select('excess_action','Origin excess response',(string)$s['excess_action'],
+            ['429'=>'429 · Too Many Requests','403'=>'403 · Forbidden']);
+        self::card_close();
+
+        self::card_open('Trusted client identity & IP policy','Configuration is security-sensitive; review CIDRs before applying');
+        self::checkbox('trust_cloudflare','Trust CF-Connecting-IP for verified proxies only',
+            !empty($s['trust_cloudflare']),
+            'Never trust client-supplied headers from an unverified proxy.');
+        self::number('ipv4_prefix','IPv4 identity bucket',(int)$s['ipv4_prefix'],8,32);
+        self::number('ipv6_prefix','IPv6 identity bucket',(int)$s['ipv6_prefix'],32,128);
+        self::advanced_lines('trusted_proxy_cidrs','Trusted proxy CIDRs',
+            (string)$s['trusted_proxy_cidrs'],'One CIDR per line. Match only proxies you operate or verify.');
+        self::advanced_lines('allowlist','Rate-limit allowlist',(string)$s['allowlist'],
+            'One IP or CIDR per line. Does not override WordPress content privacy.');
+        self::advanced_lines('denylist','Rate-limit denylist',(string)$s['denylist'],
+            'One IP or CIDR per line.');
+        self::advanced_lines('rules','CIDR policy overrides',(string)$s['rules'],
+            'CIDR|policy|threshold|window|duration|miss|unique|404');
+        self::card_close();
+
+        self::card_open('Cache-key & request diagnostics','Native LiteSpeed policies remain authoritative');
+        self::advanced_lines('drop_query_keys','Ignored query-key patterns',(string)$s['drop_query_keys'],
+            'Tracking keys only. Never drop values that affect content or access.');
+        self::advanced_lines('protected_query_keys','Protected query keys',(string)$s['protected_query_keys'],
+            'Keys that may affect content identity must not be dropped from the cache key.');
+        self::advanced_lines('scanner_paths','Scanner paths',(string)$s['scanner_paths'],
+            'One safe-reject path per line.');
+        self::advanced_select('scanner_action','Scanner response',(string)$s['scanner_action'],
+            ['404'=>'404 · Not Found','403'=>'403 · Forbidden']);
+        self::advanced_select('xmlrpc_mode','XML-RPC policy',(string)$s['xmlrpc_mode'],
+            ['disable'=>'Disable','rate_limit'=>'Rate-limit','allow'=>'Allow']);
+        self::number('xmlrpc_limit','XML-RPC rate limit',(int)$s['xmlrpc_limit'],1,10000);
+        self::checkbox('debug_headers','Emit X-NCG-* diagnostic headers',!empty($s['debug_headers']),
+            'Disable after testing to reduce information exposure.');
+        self::action_form('nrg_save_advanced','Save advanced controls');
+        self::card_close();
+        echo '</form>';
+
+        self::card_open('Diagnostics and generated LiteSpeed rules',
+            'These tools run only when explicitly invoked by an Administrator');
+        echo '<div class="nrg-advanced-tools">';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="ncg_sync_htaccess">';
+        wp_nonce_field('ncg_sync_htaccess');
+        echo '<button class="button">Synchronize .htaccess</button></form>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="ncg_cache_probe">';
+        wp_nonce_field('ncg_cache_probe');
+        echo '<button class="button">Check object-cache atomic operations</button></form>';
+        echo '</div>';
+        echo '<p class="nrg-footnote">The existing News Cache Guard marker is retained for safe .htaccess upgrades. The early MU Search Guard remains separately installed.</p>';
+        $lines = Htaccess::rules();
+        echo '<pre class="nrg-advanced-preview">' . esc_html($lines ?
+            implode("\n", $lines) : 'No plugin-managed LiteSpeed rules are currently generated.') . '</pre>';
+        self::card_close();
+    }
+
+    public static function save_advanced(): void {
+        if (!current_user_can('manage_options')) wp_die('Forbidden', 403);
+        check_admin_referer('nrg_save_advanced');
+        // Start with every existing value and modify ONLY fields shown in this form.
+        // Never reset LiteSpeed purge settings, bot enablement or CIDR policy
+        // when an unrelated module toggle is saved.
+        $values = Settings::get_all();
+        foreach (['emergency_mode','trust_cloudflare','debug_headers'] as $key) {
+            $values[$key] = empty($_POST[$key]) ? 0 : 1;
+        }
+        foreach ([
+            'origin_window','protection_duration','miss_limit','miss_window',
+            'unique_url_limit','unique_url_window','window_404','rest_window',
+            'retry_after','ipv4_prefix','ipv6_prefix','xmlrpc_limit'
+        ] as $key) {
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) {
+                $values[$key] = (int)$_POST[$key];
+            }
+        }
+        foreach ([
+            'default_policy','excess_action','scanner_action','xmlrpc_mode',
+            'trusted_proxy_cidrs','allowlist','denylist','rules',
+            'drop_query_keys','protected_query_keys','scanner_paths'
+        ] as $key) {
+            if (isset($_POST[$key]) && is_string($_POST[$key])) {
+                $values[$key] = wp_unslash($_POST[$key]);
+            }
+        }
+        update_option(Settings::OPTION, Settings::sanitize($values), false);
+        $sync = Htaccess::sync();
+        self::redirect('settings', empty($sync['ok']) ? 'htaccess_failed' : 'saved',
+            ['panel'=>'advanced']);
+    }
+
     private static function settings(): void {
+        if (isset($_GET['panel']) && sanitize_key(wp_unslash($_GET['panel'])) === 'advanced') {
+            self::advanced();
+            return;
+        }
         $e=Editorial::settings();
         echo '<div class="nrg-columns">';
         self::card_open('Module Manager','Changes are saved server-side; each supported module executes only when enabled');
@@ -516,12 +696,12 @@ final class Dashboard {
         echo '<div class="nrg-divider"></div><h3>AI Intelligence</h3><p>Not implemented. No pretend AI switch is shown.</p>';
         echo '<div class="nrg-divider"></div><h3>Advanced origin rules</h3>';
         echo '<p>Existing CIDR rules, proxy trust, XML-RPC and diagnostic tools are preserved.</p>';
-        echo '<a class="nrg-text-link" href="' . esc_url(admin_url('options-general.php?page=news-cache-guard')) . '">Open advanced settings →</a>';
+        echo '<a class="nrg-text-link" href="' . esc_url(self::url('settings', ['panel'=>'advanced'])) . '">Open advanced controls →</a>';
         self::card_close();echo '</div>';
     }
 
-    private static function redirect(string $tab,string $notice): void {
-        wp_safe_redirect(self::url($tab, ['nrg_notice'=>$notice]));
+    private static function redirect(string $tab,string $notice,array $extra = []): void {
+        wp_safe_redirect(self::url($tab, array_merge(['nrg_notice'=>$notice], $extra)));
         exit;
     }
 

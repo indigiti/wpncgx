@@ -68,7 +68,7 @@ The rc7 performance milestone introduces **request-local settings and module cac
 
 ## P2 Resource efficiency (v1.2.0-rc8; staged on rc7)
 
-Read-only admin diagnostics and Redis hot-path atomic counter efficiency, with a Post History query optimization. No public theme or author changes and no new page cache. See [RESOURCE-EFFICIENCY.md](RESOURCE-EFFICIENCY.md) for safety, release dependencies and live profiling criteria. **rc8 depends on the still-unmerged rc7 foundation and must not be deployed independently.**
+Read-only admin diagnostics and safe early rejection of over-budget traffic to avoid unnecessary Redis unique-URL operations, with a Post History query optimization. Redis counter TTL safety is preserved. No public theme or author changes and no new page cache. See [RESOURCE-EFFICIENCY.md](RESOURCE-EFFICIENCY.md) for safety, release dependencies and live profiling criteria. **rc8 depends on the still-unmerged rc7 foundation and must not be deployed independently.**
 
 ## Future work and module roadmap
 

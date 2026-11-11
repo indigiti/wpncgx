@@ -13,6 +13,8 @@ The **Newsroom Guard → Editorial Activity** workspace and the **Newsroom Guard
 - Previous articles may have no creation/publication records. We never infer an unknown uploader from the public byline.
 - The journal is append-only through the plugin UI. A database administrator can still change it. For tamper-evident records, independently export and sign/replicate events.
 
+The CI integration suite runs this tracker on real WordPress + MariaDB with the existing Editorial Master disabled **before** WordPress bootstraps. This verifies that staff attribution is independent of the approval/lock hooks, which must not be activated solely to inspect post history.
+
 ## Staging test checklist
 1. Back up WordPress DB. Activate the build and visit Newsroom Guard → Module Manager. Confirm **Track Post History and Editorial Activity** is on and Approvals and Lock stay off.
 2. As Editor A, create a draft; select Reporter B using the existing WordPress Author UI. Verify site byline still says Reporter B and Post History says created by Editor A.

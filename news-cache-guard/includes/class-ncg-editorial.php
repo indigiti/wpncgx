@@ -268,7 +268,7 @@ final class Editorial {
     public static function meta_event($meta_id, int $post_id, string $key, $value): void {
         if (get_post_type($post_id) !== 'post') return;
         if (in_array($key, ['_thumbnail_id','_yoast_wpseo_title','_yoast_wpseo_metadesc','_yoast_wpseo_canonical','rank_math_title','rank_math_description','rank_math_canonical_url'], true)) {
-            self::record('sensitive_meta_edited', $post_id, ['key'=>$key, 'sha256'=>hash('sha256', maybe_serialize($value))]);
+            self::record('sensitive_meta_edited', $post_id, ['key'=>$key, 'sha256'=>hash('sha256', (string)maybe_serialize($value))]);
         }
     }
     public static function cleanup(): void {

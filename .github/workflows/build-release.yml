@@ -1,0 +1,186 @@
+name: Build Newsroom Guard release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-release.yml'
+      - 'news-cache-guard/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: newsroom-guard-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Validate and package plugin
+    runs-on: ubuntu-latest
+    outputs:
+      sha256: ${{ steps.checksum.outputs.sha256 }}
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@v4
+
+      - name: PHP 8.3 runtime
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Verify release identity and PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Eq 'Plugin Name: Newsroom Guard' news-cache-guard/news-cache-guard.php
+          grep -Eq 'Version: 1\\.2\\.0-rc1' news-cache-guard/news-cache-guard.php
+          grep -Fq "define('NCG_VERSION', '1.2.0-rc1');" news-cache-guard/news-cache-guard.php
+          find news-cache-guard -name '*.php' -print0 | xargs -0 -n1 php -l
+          bash -n news-cache-guard/tools/cache-probe.sh
+
+      - name: Run cache and editorial regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          php news-cache-guard/tests/regression.php
+          php news-cache-guard/tests/mu-search-guard.php
+          php news-cache-guard/tests/worker-guard.php
+          php news-cache-guard/tests/worker-guard.php phase2
+          php news-cache-guard/tests/worker-guard.php forcecache
+          php news-cache-guard/tests/editorial.php
+          php news-cache-guard/tests/dashboard.php
+          php news-cache-guard/tests/branding.php
+
+      - name: Package installable WordPress ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          # WordPress requires the existing plugin slug as the top-level ZIP folder.
+          # Preserve the bundled MU-plugin source as a separate manually-installed option.
+          zip -q -r dist/newsroom-guard-1.2.0-rc1.zip news-cache-guard \
+            -x 'news-cache-guard/tests/*'
+          unzip -t dist/newsroom-guard-1.2.0-rc1.zip
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc1.zip | grep -Fx 'news-cache-guard/news-cache-guard.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc1.zip | grep -Fx 'news-cache-guard/includes/class-ncg-dashboard.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc1.zip | grep -Fx 'news-cache-guard/includes/class-ncg-editorial-workflow.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc1.zip | grep -Fx 'news-cache-guard/assets/newsroom-dashboard.css'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc1.zip | grep -Fx 'news-cache-guard/mu-plugins/wp-search-guard.php'
+          if unzip -Z -1 dist/newsroom-guard-1.2.0-rc1.zip | grep -E '^news-cache-guard/tests/'; then
+            echo "::error::Testing scripts should not be included in the installable plugin ZIP"
+            exit 1
+          fi
+
+      - name: Generate checksum and source manifest
+        id: checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum newsroom-guard-1.2.0-rc1.zip > SHA256SUMS.txt
+          echo "sha256=$(cut -d' ' -f1 SHA256SUMS.txt)" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          package=pathlib.Path('newsroom-guard-1.2.0-rc1.zip')
+          metadata={
+              'name':'Newsroom Guard',
+              'plugin_slug':'news-cache-guard',
+              'version':'1.2.0-rc1',
+              'channel':'testing-prerelease',
+              'artifact_name':'digiops-release',
+              'source_repository':os.environ['GITHUB_REPOSITORY'],
+              'source_commit':os.environ['GITHUB_SHA'],
+              'wordpress_zip':package.name,
+              'sha256':hashlib.sha256(package.read_bytes()).hexdigest(),
+              'editorial_enforcement_default':'off',
+              'mu_plugin_activation':'manual installation to wp-content/mu-plugins'
+          }
+          pathlib.Path('manifest.json').write_text(json.dumps(metadata,indent=2)+'\n',encoding='utf-8')
+          PY
+
+      - name: Upload DigiOps-compatible build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digiops-release
+          path: |
+            dist/newsroom-guard-1.2.0-rc1.zip
+            dist/SHA256SUMS.txt
+            dist/manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add GitHub Actions build summary
+        shell: bash
+        run: |
+          {
+            echo '### Newsroom Guard v1.2.0-rc1 — testing release'
+            echo
+            echo 'Artifact: `digiops-release` (installable WordPress ZIP, checksum and manifest)'
+            echo
+            echo 'Source SHA: `'${GITHUB_SHA}'`'
+            echo
+            echo 'SHA-256: `'${{ steps.checksum.outputs.sha256 }}'`'
+            echo
+            echo '**Important:** This is not a production verification. Editorial Master is OFF by default.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  github-prerelease:
+    name: Publish testing prerelease
+    runs-on: ubuntu-latest
+    needs: build-release
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Retrieve the verified installable ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: digiops-release
+          path: dist
+
+      - name: Publish GitHub prerelease without moving existing tags
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v1.2.0-rc1
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c SHA256SUMS.txt
+          cd ..
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+            tagged_sha="$(git rev-list -n 1 "$TAG")"
+            if [ "$tagged_sha" != "$GITHUB_SHA" ]; then
+              echo "::error::The prerelease tag is on another source commit; refusing to overwrite."
+              exit 1
+            fi
+            gh release upload "$TAG" \
+              dist/newsroom-guard-1.2.0-rc1.zip dist/SHA256SUMS.txt dist/manifest.json \
+              --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            cat > dist/RELEASE-NOTES.md <<'NOTES'
+          Newsroom Guard v1.2.0-rc1 — TESTING ONLY.
+
+          Includes the 10-section WordPress admin dashboard, editorial review and
+          audit foundations, Bot/Worker module controls, reporting and export tools.
+
+          The WordPress installable ZIP retains the existing `news-cache-guard`
+          folder to update current installations safely. The bundled early Search
+          Guard MU file must still be installed separately if needed.
+
+          Editorial Master is OFF by default. Validate on Cloudways staging before
+          enabling the approval and post-publication lock enforcement modules.
+          NOTES
+            gh release create "$TAG" \
+              dist/newsroom-guard-1.2.0-rc1.zip dist/SHA256SUMS.txt dist/manifest.json \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title 'Newsroom Guard v1.2.0-rc1 — Testing' \
+              --notes-file dist/RELEASE-NOTES.md --prerelease
+          fi

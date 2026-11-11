@@ -70,6 +70,31 @@ jobs:
             echo "::error::Unapproved direct post mutation did not fail closed."
             exit 1
           fi
+      - name: Stale Editor approval form must not approve changed content
+        run: |
+          set -euo pipefail
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            $reviewer=get_user_by("login","ncg-editor-b");
+            wp_set_current_user($reviewer->ID);
+            global $wpdb;
+            $posts=get_posts(["post_type"=>"post","post_status"=>"pending","s"=>"Author draft approval"]);
+            if (!$posts) WP_CLI::error("Pending fixture missing.");
+            $table=\NCG\Editorial::table("reviews");
+            $req=$wpdb->get_row($wpdb->prepare(
+              "SELECT * FROM $table WHERE post_id=%d AND status=%s ORDER BY id DESC LIMIT 1",
+              $posts[0]->ID,"pending"));
+            if (!$req) WP_CLI::error("Review request missing.");
+            $_REQUEST["_wpnonce"]=wp_create_nonce("ncg_ed_review");
+            $_POST=["review_id"=>$req->id,"snapshot_hash"=>str_repeat("0",64),"decision"=>"approve"];
+            \NCG\EditorialWorkflow::review();
+          '
+          php /tmp/wp-cli.phar --path=/tmp/ncg-wp-test eval '
+            global $wpdb;
+            $table=\NCG\Editorial::table("reviews");
+            $n=(int)$wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status=\"pending\"");
+            if ($n < 1) WP_CLI::error("Stale form approved an article.");
+            WP_CLI::success("Stale approval rejected; request remains pending.");
+          '
       - name: End-to-end approval decision by independent Editor
         run: |
           set -euo pipefail

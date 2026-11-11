@@ -18,7 +18,7 @@ function do_action($hook,...$args) { $GLOBALS['perf_actions'][]=[$hook,...$args]
 function fire_option_hook($hook,$key) { foreach(($GLOBALS['perf_hooks'][$hook]??[]) as $cb) $cb($key); }
 function wp_is_post_revision($id) {return false;}
 function wp_is_post_autosave($id) {return false;}
-function get_permalink($id) {return 'https://example.invalid/news/'.$id.'/';}
+function get_permalink($id) {return 'https://example.invalid/news/'.($id instanceof WP_Post ? $id->post_name : $id).'/';}
 function home_url($path='/') {return 'https://example.invalid'.$path;}
 function wp_get_post_categories($id) {return [3,3];}
 function get_category_link($id) {return 'https://example.invalid/category/'.$id.'/';}
@@ -34,7 +34,8 @@ class WP_Post {
     public int $ID;
     public string $post_status;
     public string $post_type='post';
-    public function __construct(int $id,string $status){$this->ID=$id;$this->post_status=$status;}
+    public string $post_name;
+    public function __construct(int $id,string $status,string $slug=''){$this->ID=$id;$this->post_status=$status;$this->post_name=$slug!==''?$slug:(string)$id;}
 }
 function perf_check(bool $yes,string $name): void {
     if (!$yes) {fwrite(STDERR,"FAIL: $name\n");exit(1);}
@@ -91,6 +92,14 @@ perf_check(count($urls)===count(array_unique($urls)),'Each cache URL purged at m
 perf_check(in_array('https://example.invalid/news/123/',$urls,true) &&
     in_array('https://example.invalid/category/3/',$urls,true),
     'Article URL and category invalidation preserved');
+$GLOBALS['perf_actions']=[];
+$purger->on_after_insert(123,new WP_Post(123,'publish','new-slug'),true,new WP_Post(123,'publish','old-slug'));
+$oldUrls=array_values(array_map(static fn($a)=>$a[1],array_filter(
+    $GLOBALS['perf_actions'],static fn($a)=>$a[0]==='litespeed_purge_url')));
+perf_check(in_array('https://example.invalid/news/old-slug/',$oldUrls,true),
+    'Previously published permalink is purged after a slug change');
+perf_check(count($oldUrls)===count(array_unique($oldUrls)),
+    'Old permalink is not purged twice when current permalink matches');
 $GLOBALS['perf_actions']=[];
 $purger->on_after_insert(123,new WP_Post(123,'draft'),true,new WP_Post(123,'draft'));
 perf_check(count($GLOBALS['perf_actions'])===0, 'Draft-only edits do not purge');

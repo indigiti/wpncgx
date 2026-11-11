@@ -39,3 +39,7 @@ A separate **Settings → News Cache Guard → Editorial & Publishing** tab prov
 For an enabled approval workflow, Authors and Editors submit posts to a review queue. Editor-originated articles require approval by a different Editor. Published-article changes use pending revision proposals, while the four-hour post-publication lock blocks unauthorised direct edits and deletions. Administrator emergency publishing is audited. User ID 529 is exempt from **the lock only**, never from independent approval.
 
 This is a **release candidate on a draft pull request, not an approved production release**. The GitHub integration job tests real WordPress APIs against an ephemeral MariaDB instance, but must not substitute for Cloudways staging, Gutenberg browser, cache-purge and proxy testing. See [EDITORIAL-MODULE.md](EDITORIAL-MODULE.md).
+
+## Future work and module roadmap
+
+The tracked [Newsroom Guard Future Work roadmap](FUTURE-WORK.md) covers release gates (M1), newsroom security and corrections (M2), article health (M3), editorial operations (M4), performance intelligence (M5), AI and distribution (M6), and multi-publication governance (M7). These are planned modules, **not completed features**. The current draft PR cannot merge until actual Cloudways staging acceptance passes.

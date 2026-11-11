@@ -168,10 +168,15 @@ final class EditorialWorkflow {
             && ((int)$p->post_author === $actor || user_can($actor, 'edit_others_posts'));
     }
     private static function redirect(string $message, string $view = 'queue'): void {
-        $url = current_user_can('manage_options')
-            ? add_query_arg(['page'=>'news-cache-guard','ncg_tab'=>'editorial','view'=>$view,
-                'ncg_ed_notice'=>$message], admin_url('options-general.php'))
-            : add_query_arg(['page'=>'ncg-editorial-reviews','ncg_ed_notice'=>$message], admin_url('edit.php'));
+        if (current_user_can('manage_options')) {
+            $url = add_query_arg(['page'=>'news-cache-guard','ncg_tab'=>'editorial',
+                'view'=>$view,'ncg_ed_notice'=>$message], admin_url('options-general.php'));
+        } elseif (current_user_can('edit_others_posts')) {
+            $url = add_query_arg(['page'=>'ncg-editorial-reviews','ncg_ed_notice'=>$message],
+                admin_url('edit.php'));
+        } else {
+            $url = add_query_arg(['post_type'=>'post','ncg_ed_notice'=>$message], admin_url('edit.php'));
+        }
         wp_safe_redirect($url);
         exit;
     }

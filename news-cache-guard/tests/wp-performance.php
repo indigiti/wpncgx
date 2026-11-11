@@ -47,6 +47,21 @@ $urls=[];
 $edit=wp_update_post(['ID'=>$postId,'post_title'=>'NCG rc7 corrected story'],true);
 ncg_perf_assert(!is_wp_error($edit) && count($urls)>0 &&
     count($urls)===count(array_unique($urls)), 'Published correction invalidates each URL once');
+// Reproduce a correction that changes the canonical slug: both old and
+// new public URLs must be invalidated, otherwise the old article stays cached.
+$originalPermalinkStructure = get_option('permalink_structure');
+update_option('permalink_structure', '/%postname%/');
+$oldPublicUrl = get_permalink($postId);
+$urls=[];
+$renamed = wp_update_post(['ID'=>$postId,'post_name'=>'ncg-rc7-corrected-slug'],true);
+$newPublicUrl = get_permalink($postId);
+ncg_perf_assert(!is_wp_error($renamed) && $oldPublicUrl !== $newPublicUrl,
+    'Slug change creates a distinct old and new permalink');
+ncg_perf_assert(in_array($oldPublicUrl, $urls, true) && in_array($newPublicUrl, $urls, true),
+    'Slug correction purges both former and current public URLs');
+ncg_perf_assert(count($urls) === count(array_unique($urls)),
+    'Slug correction does not duplicate a purge');
+update_option('permalink_structure', $originalPermalinkStructure);
 $urls=[];
 $unpublish=wp_update_post(['ID'=>$postId,'post_status'=>'draft'],true);
 ncg_perf_assert(!is_wp_error($unpublish) && count($urls)>0,

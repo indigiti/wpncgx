@@ -1,3 +1,11 @@
+# v1.2.0-rc9 — P3 background work reliability (staging)
+
+- Add on-demand, read-only WP-Cron and Action Scheduler diagnostics to the existing Tools → PM Worker Guard admin page.
+- Use one bounded oldest-pending lookup, without full queue counts, log traversal, polling, or jobs created by the diagnostics.
+- Distinguish future jobs, stale pending actions, unavailable Action Scheduler, and unknown external cron health.
+- Warn when both WP-Cron page triggering and Action Scheduler async loopbacks are disabled. No cron settings or worker limits are changed.
+- Include standalone tests for queue/cron states and a real WordPress test enforcing zero SQL writes during a snapshot. Production throughput and server cron execution remain unverified.
+
 # v1.2.0-rc8 — P2 resource efficiency (staging)
 
 - Preserve Redis counter ADD-first initialization and expiry across object-cache backends; reject an unsafe INCR-first strategy that can create immortal keys on missing counters.

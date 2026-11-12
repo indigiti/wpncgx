@@ -15,6 +15,10 @@ Newsroom Guard loads this module automatically; do **not** activate the old stan
 
 The limits preserve more conservative values supplied by other plugins. Rank Math sitemap settings are capped at runtime on frontend/CLI and **not written to `wp_options`**. Missing or invalid `items_per_page` values are left intact to preserve Rank Math defaults. WordPress admin settings reads are not modified. Other plugins may apply a filter later than priority 999 and change the result; confirm effective behavior in staging.
 
+## P3: Read-only queue and cron visibility (staged rc9)
+
+The existing **Tools → PM Worker Guard** admin page now displays WP-Cron page-trigger settings, the next queue and editorial-cleanup cron timestamps, and the *oldest single pending Action Scheduler action* when the scheduler is initialized. A pending action at least five minutes overdue is a **potential delay**, not proof of a stopped queue. The page never changes a schedule or runs an action; it also cannot verify whether your external Cloudways server cron exists or executes. The lookup is bounded to one pending action ID; no count of all historical jobs or logs is performed. See [BACKGROUND-WORK-RELIABILITY.md](BACKGROUND-WORK-RELIABILITY.md).
+
 ## Recommended staging rollout
 
 1. Back up your WordPress database and any modified cron configuration. Deactivate the **standalone** PM Worker Guard, if installed, to prevent overlapping filters.

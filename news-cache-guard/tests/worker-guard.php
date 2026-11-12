@@ -31,8 +31,11 @@ function esc_html($string) { return htmlspecialchars((string) $string, ENT_QUOTE
 function esc_url($string) { return (string) $string; }
 function admin_url($path) { return '/wp-admin/' . $path; }
 function __return_false() { return false; }
+function wp_next_scheduled($hook) { $GLOBALS['pmwg_cron_reads'][] = $hook; return false; }
+function did_action($hook) { return 0; }
 
 require_once __DIR__ . '/../includes/class-ncg-worker-guard.php';
+require_once __DIR__ . '/../includes/class-ncg-worker-diagnostics.php';
 function check(bool $ok, string $text): void {
     if (!$ok) { fwrite(STDERR, "FAIL: {$text}\n"); exit(1); }
     echo "PASS: {$text}\n";
@@ -71,6 +74,8 @@ W::render_admin_page();
 $html = ob_get_clean();
 check(strpos($html, 'action-scheduler run --batch-size=5 --batches=1') !== false, 'Admin gives correct safe WP-CLI example');
 check(strpos($html, 'PM Worker Guard') !== false, 'Admin page title visible');
+check(strpos($html, 'Worker and cron readiness (read-only)') !== false, 'On-demand diagnostics are exposed to admin');
+check(strpos($html, 'External server cron execution cannot be verified') !== false, 'Worker diagnostics never pretend to confirm server cron');
 check(W::disable_async_runner() === ($phase === 'phase2'), 'Async runner disable status matches constant');
 if ($phase === 'phase2') {
     ob_start();

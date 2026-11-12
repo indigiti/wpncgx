@@ -154,6 +154,30 @@ final class WorkerGuard {
             echo '<tr><th scope="row">' . esc_html($label) . '</th><td>' . esc_html($value) . '</td></tr>';
         }
         echo '</tbody></table>';
+        // Bounded admin-only diagnostics. One oldest-pending action lookup;
+        // no cron modification, queue polling, or full backlog COUNT(*).
+        echo '<h2>Worker and cron readiness (read-only)</h2>';
+        echo '<p>Current snapshot for this admin page. An overdue action is a warning, not proof that a worker has failed. External server cron cannot be validated from PHP.</p>';
+        echo '<table class="widefat striped" style="max-width:900px"><tbody>';
+        $diagnosticLabels = [
+            'wp_cron'=>'WP-Cron trigger',
+            'async'=>'Action Scheduler async',
+            'next_queue'=>'Next WP-Cron queue event',
+            'next_cleanup'=>'Next editorial cleanup event',
+            'oldest_pending'=>'Oldest pending Action Scheduler job',
+            'queue_signal'=>'Queue indication',
+            'server_cron'=>'External server cron',
+            'risk'=>'Operational check',
+        ];
+        // Load only when an authorised administrator opens this tools page.
+        if (!class_exists(WorkerDiagnostics::class, false)) {
+            require_once __DIR__ . '/class-ncg-worker-diagnostics.php';
+        }
+        foreach (WorkerDiagnostics::snapshot() as $key=>$value) {
+            echo '<tr><th scope="row">' . esc_html($diagnosticLabels[$key] ?? $key) .
+                '</th><td>' . esc_html($value) . '</td></tr>';
+        }
+        echo '</tbody></table>';
         echo '<h2>Validate queue execution before disabling async requests</h2>';
         echo '<p>Run this from an SSH session first (without <code>--quiet</code>) and inspect Action Scheduler pending/failed counts:</p>';
         echo '<pre style="padding:12px;background:#fff;max-width:900px;overflow:auto;border:1px solid #ccd0d4">' . esc_html($cli) . '</pre>';

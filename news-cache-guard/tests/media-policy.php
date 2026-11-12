@@ -62,6 +62,8 @@ $opts['media_uploads']=1;
 $opts['category_creation']=1;
 $opts['featured_alt']=1;
 $GLOBALS['nrg_test_opts'][Modules::OPTION]=$opts;
+// The standalone mock bypasses actual WordPress updated_option hooks.
+Modules::invalidate();
 MediaPolicy::boot();
 nrg_expect(in_array('wp_handle_upload_prefilter',$GLOBALS['nrg_test_hooks'],true), 'Browser uploader is protected');
 nrg_expect(in_array('wp_handle_sideload_prefilter',$GLOBALS['nrg_test_hooks'],true), 'WordPress sideload path is protected');
@@ -120,6 +122,7 @@ nrg_expect(get_post_meta(21,'_wp_attachment_image_alt')==='',
     'Cannot edit another author’s attachment metadata without permission');
 $GLOBALS['nrg_test_editable'][21]=true;
 $GLOBALS['nrg_test_opts'][Modules::OPTION]['featured_alt']=0;
+Modules::invalidate();
 MediaPolicy::ensure_featured_alt(11);
 nrg_expect(get_post_meta(21,'_wp_attachment_image_alt')==='',
     'Featured alt automation stops immediately when switched OFF');

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Newsroom Guard
  * Description: Newsroom publishing security, editorial approvals, audit intelligence, LiteSpeed caching and origin protection for WordPress.
- * Version: 1.2.0-rc6
+ * Version: 1.2.0-rc7
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: DCN
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('NCG_VERSION', '1.2.0-rc6');
+define('NCG_VERSION', '1.2.0-rc7');
 define('NCG_FILE', __FILE__);
 define('NCG_DIR', plugin_dir_path(__FILE__));
 define('NCG_URL', plugin_dir_url(__FILE__));
@@ -30,6 +30,10 @@ require_once NCG_DIR . 'includes/class-ncg-media-policy.php';
 require_once NCG_DIR . 'includes/class-ncg-ip.php';
 require_once NCG_DIR . 'includes/class-ncg-counter.php';
 require_once NCG_DIR . 'includes/class-ncg-litespeed.php';
+// Cache environment checks are admin-only; avoid loading diagnostics on public requests.
+if (is_admin() || (defined('WP_CLI') && WP_CLI)) {
+    require_once NCG_DIR . 'includes/class-ncg-cache-environment.php';
+}
 require_once NCG_DIR . 'includes/class-ncg-htaccess.php';
 require_once NCG_DIR . 'includes/class-ncg-purger.php';
 require_once NCG_DIR . 'includes/class-ncg-guard.php';

@@ -15,14 +15,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - name: PHP lint
-        run: find news-cache-guard -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
-      - name: Logic regression tests
-        run: |
-          php news-cache-guard/tests/regression.php
-          php news-cache-guard/tests/mu-search-guard.php
-          php news-cache-guard/tests/worker-guard.php
-          php news-cache-guard/tests/worker-guard.php phase2
-          php news-cache-guard/tests/worker-guard.php forcecache
+      - name: Full standalone release preflight
+        run: bash news-cache-guard/tools/release-preflight.sh
       - name: Cache probe shell syntax
         run: bash -n news-cache-guard/tools/cache-probe.sh

@@ -17,9 +17,11 @@ final class Plugin {
     }
 
     public function boot(): void {
+        // Register option invalidation before other modules read the same settings.
+        Settings::boot();
+        Modules::boot();
         $this->guard = new Guard();
         $this->purger = new Purger();
-        $this->admin = new Admin();
         GitHubUpdates::boot();
         WorkerGuard::boot();
         Editorial::boot();
@@ -28,7 +30,10 @@ final class Plugin {
         if (is_admin()) { EditorialAdmin::boot(); Dashboard::boot(); }
         $this->guard->boot();
         $this->purger->boot();
-        if (is_admin()) $this->admin->boot();
+        if (is_admin()) {
+            $this->admin = new Admin();
+            $this->admin->boot();
+        }
     }
 
     public static function activate(): void {

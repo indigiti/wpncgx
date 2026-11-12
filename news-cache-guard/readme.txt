@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc6
+Stable tag: 1.2.0-rc7
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,11 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc7 =
+* Reuse settings, module options and safe cache-key patterns per PHP request, isolated across Multisite blogs.
+* Replace duplicate post-status/save cache invalidation hooks with a single post-save-complete event.
+* Add read-only cache environment diagnostics; no automatic Varnish/Cloudflare changes.
 
 = 1.2.0-rc6 =
 * Track real staff creator, editing operator and publisher independently of public WordPress Author.

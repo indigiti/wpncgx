@@ -61,7 +61,7 @@ function check(bool $ok, string $description): void {
     if (!$ok) { fwrite(STDERR, "FAIL: {$description}\n"); exit(1); }
     echo "PASS: {$description}\n";
 }
-function config(array $overrides = []): void { $GLOBALS['ncg_config'] = $overrides + \NCG\Settings::defaults(); }
+function config(array $overrides = []): void { $GLOBALS['ncg_config'] = $overrides + \NCG\Settings::defaults(); \NCG\Settings::invalidate(); }
 function reset_actions(): void { $GLOBALS['ncg_actions'] = []; }
 $_SERVER['REMOTE_ADDR'] = '203.0.113.21';
 $_SERVER['REQUEST_METHOD'] = 'GET';

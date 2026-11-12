@@ -333,7 +333,7 @@ final class Dashboard {
 
     private static function cache(): void {
         $s = Settings::get_all();
-        self::note('LiteSpeed controls the actual page cache. These switches control only this plugin’s optional query-key rules and purge behaviour; they never force private pages into a public cache.');
+        self::note('Newsroom Guard is not a full-page cache. LiteSpeed, Cloudways Varnish and Cloudflare operate outside PHP; these signals do not prove cache hits or purges.');
         echo '<div class="nrg-columns">';
         self::card_open('Cache policy', 'Preserve built-in LiteSpeed privacy exclusions');
         echo '<div class="nrg-system-list">';
@@ -343,6 +343,14 @@ final class Dashboard {
             ['No-cache request reuse', $s['ignore_request_no_cache'] ? 'Opt-in enabled':'Off'],
         ] as $pair) echo '<div><span>' . esc_html($pair[0]) . '</span><strong>' . esc_html($pair[1]) . '</strong></div>';
         echo '</div>'; self::card_close();
+        self::card_open('Hosting cache signals', 'Read-only PHP-side indications; no remote checks or cache changes');
+        echo '<div class="nrg-system-list">';
+        foreach (CacheEnvironment::signals() as $name=>$value) {
+            $labels = ['origin'=>'Origin web-server hint','litespeed'=>'LiteSpeed hook','breeze'=>'Breeze plugin','varnish'=>'Varnish','edge'=>'Cloudflare HTML edge cache'];
+            echo '<div><span>' . esc_html($labels[$name] ?? $name) . '</span><strong>' . esc_html($value) . '</strong></div>';
+        }
+        echo '</div><p class="nrg-footnote">Do not enable a second page cache or purge an entire CDN based on these signals. Verify which cache handles HTML and its actual invalidation before rollout.</p>';
+        self::card_close();
         self::card_open('Cache controls', 'Saves only these values; all other origin settings are preserved');
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<input type="hidden" name="section" value="cache">';

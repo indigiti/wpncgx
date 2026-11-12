@@ -62,6 +62,9 @@ $other=clone $post;$other->post_type='page';
 PostHistory::inserted(100,$other,false,null);
 check(count($GLOBALS['events'])===3,'Pages excluded');
 $GLOBALS['opts'][Modules::OPTION]=['post_history'=>0];
+// The standalone mock mutates an array directly; real WordPress option updates
+// invoke updated_option and invalidate the request-local module cache.
+Modules::invalidate();
 PostHistory::inserted(100,$post,false,null);
 check(count($GLOBALS['events'])===3,'Module switch stops tracking');
 check(Modules::sanitize(['post_history'=>0])['post_history']===0, 'Module setting can be disabled');

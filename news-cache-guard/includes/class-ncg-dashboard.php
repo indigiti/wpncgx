@@ -351,6 +351,21 @@ final class Dashboard {
         }
         echo '</div><p class="nrg-footnote">Do not enable a second page cache or purge an entire CDN based on these signals. Verify which cache handles HTML and its actual invalidation before rollout.</p>';
         self::card_close();
+        self::card_open('Current admin PHP request', 'Lightweight in-process snapshot; not whole-server CPU/RAM or frontend performance');
+        $snapshot = CacheEnvironment::resource_snapshot();
+        $labels = [
+            'elapsed'=>'Elapsed PHP time so far',
+            'memory'=>'Allocated PHP memory',
+            'peak'=>'Peak allocated PHP memory',
+            'queries'=>'WordPress database queries so far',
+            'object_cache'=>'Object cache',
+        ];
+        echo '<div class="nrg-system-list">';
+        foreach ($snapshot as $key=>$value) {
+            echo '<div><span>' . esc_html($labels[$key] ?? $key) . '</span><strong>' . esc_html($value) . '</strong></div>';
+        }
+        echo '</div><p class="nrg-footnote">Snapshot is collected only while an administrator opens this panel. It excludes cached public requests and cannot establish total server CPU usage, Redis ops or cache-hit ratio.</p>';
+        self::card_close();
         self::card_open('Cache controls', 'Saves only these values; all other origin settings are preserved');
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<input type="hidden" name="section" value="cache">';

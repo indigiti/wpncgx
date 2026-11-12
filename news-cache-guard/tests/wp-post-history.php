@@ -64,10 +64,21 @@ $edit=$wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE post_id=%d AND e
 ncg_history_assert($edit && (int)$edit->actor_id===$editorB,'Last editor identified');
 
 wp_set_current_user($editorB);
+// Count only Post History SQL round-trips: author/meta lookups use normal
+// WordPress caches and may legitimately vary across environments.
+$history_queries = 0;
+$history_query_filter = static function($sql) use (&$history_queries, $table) {
+    if (strpos($sql, 'FROM ' . $table) !== false) ++$history_queries;
+    return $sql;
+};
+add_filter('query', $history_query_filter, 999);
 ob_start(); \NCG\PostHistory::render_meta_box(get_post($postId)); $html=ob_get_clean();
+remove_filter('query', $history_query_filter, 999);
 ncg_history_assert(strpos($html,'Public author')!==false &&
     strpos($html,'First published by')!==false &&
     strpos($html,'Created by')!==false,'Editor Post History panel renders real events');
+ncg_history_assert($history_queries === 3,
+    'Recent edits reuse loaded history rows instead of querying last editor again');
 wp_set_current_user($reporterB);
 ob_start(); \NCG\PostHistory::render_meta_box(get_post($postId)); $restricted=ob_get_clean();
 ncg_history_assert($restricted==='', 'Ordinary author cannot view private operator details');

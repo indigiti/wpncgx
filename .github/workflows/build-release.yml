@@ -37,8 +37,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -Eq 'Plugin Name: Newsroom Guard' news-cache-guard/news-cache-guard.php
-          grep -Fq 'Version: 1.2.0-rc7' news-cache-guard/news-cache-guard.php
-          grep -Fq "define('NCG_VERSION', '1.2.0-rc7');" news-cache-guard/news-cache-guard.php
+          grep -Fq 'Version: 1.2.0-rc8' news-cache-guard/news-cache-guard.php
+          grep -Fq "define('NCG_VERSION', '1.2.0-rc8');" news-cache-guard/news-cache-guard.php
           find news-cache-guard -name '*.php' -print0 | xargs -0 -n1 php -l
           bash -n news-cache-guard/tools/cache-probe.sh
 
@@ -53,15 +53,17 @@ jobs:
           mkdir -p dist
           # WordPress requires the existing plugin slug as the top-level ZIP folder.
           # Preserve the bundled MU-plugin source as a separate manually-installed option.
-          zip -q -r dist/newsroom-guard-1.2.0-rc7.zip news-cache-guard \
+          zip -q -r dist/newsroom-guard-1.2.0-rc8.zip news-cache-guard \
             -x 'news-cache-guard/tests/*'
-          unzip -t dist/newsroom-guard-1.2.0-rc7.zip
-          unzip -Z -1 dist/newsroom-guard-1.2.0-rc7.zip | grep -Fx 'news-cache-guard/news-cache-guard.php'
-          unzip -Z -1 dist/newsroom-guard-1.2.0-rc7.zip | grep -Fx 'news-cache-guard/includes/class-ncg-dashboard.php'
-          unzip -Z -1 dist/newsroom-guard-1.2.0-rc7.zip | grep -Fx 'news-cache-guard/includes/class-ncg-editorial-workflow.php'
-          unzip -Z -1 dist/newsroom-guard-1.2.0-rc7.zip | grep -Fx 'news-cache-guard/assets/newsroom-dashboard.css'
-          unzip -Z -1 dist/newsroom-guard-1.2.0-rc7.zip | grep -Fx 'news-cache-guard/mu-plugins/wp-search-guard.php'
-          if unzip -Z -1 dist/newsroom-guard-1.2.0-rc7.zip | grep -E '^news-cache-guard/tests/'; then
+          unzip -t dist/newsroom-guard-1.2.0-rc8.zip
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/news-cache-guard.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-dashboard.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-counter.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-cache-environment.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/includes/class-ncg-editorial-workflow.php'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/assets/newsroom-dashboard.css'
+          unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -Fx 'news-cache-guard/mu-plugins/wp-search-guard.php'
+          if unzip -Z -1 dist/newsroom-guard-1.2.0-rc8.zip | grep -E '^news-cache-guard/tests/'; then
             echo "::error::Testing scripts should not be included in the installable plugin ZIP"
             exit 1
           fi
@@ -72,15 +74,15 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum newsroom-guard-1.2.0-rc7.zip > SHA256SUMS.txt
+          sha256sum newsroom-guard-1.2.0-rc8.zip > SHA256SUMS.txt
           echo "sha256=$(cut -d' ' -f1 SHA256SUMS.txt)" >> "$GITHUB_OUTPUT"
           python3 - <<'PY'
           import hashlib,json,os,pathlib
-          package=pathlib.Path('newsroom-guard-1.2.0-rc7.zip')
+          package=pathlib.Path('newsroom-guard-1.2.0-rc8.zip')
           metadata={
               'name':'Newsroom Guard',
               'plugin_slug':'news-cache-guard',
-              'version':'1.2.0-rc7',
+              'version':'1.2.0-rc8',
               'channel':'testing-prerelease',
               'artifact_name':'digiops-release',
               'source_repository':os.environ['GITHUB_REPOSITORY'],
@@ -98,7 +100,7 @@ jobs:
         with:
           name: digiops-release
           path: |
-            dist/newsroom-guard-1.2.0-rc7.zip
+            dist/newsroom-guard-1.2.0-rc8.zip
             dist/SHA256SUMS.txt
             dist/manifest.json
           if-no-files-found: error
@@ -108,7 +110,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo '### Newsroom Guard v1.2.0-rc7 — testing release'
+            echo '### Newsroom Guard v1.2.0-rc8 — testing release'
             echo
             echo 'Artifact: `digiops-release` (installable WordPress ZIP, checksum and manifest)'
             echo
@@ -139,7 +141,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v1.2.0-rc7
+          TAG: v1.2.0-rc8
         run: |
           set -euo pipefail
           cd dist
@@ -153,11 +155,15 @@ jobs:
               exit 1
             fi
             gh release upload "$TAG" \
-              dist/newsroom-guard-1.2.0-rc7.zip dist/SHA256SUMS.txt dist/manifest.json \
+              dist/newsroom-guard-1.2.0-rc8.zip dist/SHA256SUMS.txt dist/manifest.json \
               --clobber --repo "$GITHUB_REPOSITORY"
           else
             cat > dist/RELEASE-NOTES.md <<'NOTES'
-          Newsroom Guard v1.2.0-rc7 — TESTING ONLY.
+          Newsroom Guard v1.2.0-rc8 — TESTING ONLY.
+
+          P2 preserves Redis counter expiry while skipping redundant unique-URL
+          accounting on enforced misses, and reduces redundant
+          Post History SQL queries, with read-only admin resource snapshots.
 
           Includes request-local configuration caching and single-shot post-save
           cache invalidation, plus read-only cache backend diagnostics.
@@ -172,8 +178,8 @@ jobs:
           enabling the approval and post-publication lock enforcement modules.
           NOTES
             gh release create "$TAG" \
-              dist/newsroom-guard-1.2.0-rc7.zip dist/SHA256SUMS.txt dist/manifest.json \
+              dist/newsroom-guard-1.2.0-rc8.zip dist/SHA256SUMS.txt dist/manifest.json \
               --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-              --title 'Newsroom Guard v1.2.0-rc7 — Testing' \
+              --title 'Newsroom Guard v1.2.0-rc8 — Testing' \
               --notes-file dist/RELEASE-NOTES.md --prerelease
           fi

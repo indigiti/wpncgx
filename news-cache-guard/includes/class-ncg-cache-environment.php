@@ -8,6 +8,29 @@ namespace NCG;
 if (!defined('ABSPATH')) exit;
 
 final class CacheEnvironment {
+    /**
+     * Cheap, read-only snapshot of THIS administrator PHP request so far.
+     * These are not server CPU/RAM totals, frontend cache-hit measurements or
+     * page-load benchmarks. No SQL, Redis or outbound requests are added.
+     */
+    public static function resource_snapshot(): array {
+        $elapsed = '';
+        if (isset($_SERVER['REQUEST_TIME_FLOAT']) && is_numeric($_SERVER['REQUEST_TIME_FLOAT'])) {
+            $seconds = microtime(true) - (float)$_SERVER['REQUEST_TIME_FLOAT'];
+            if ($seconds >= 0 && $seconds < 3600) {
+                $elapsed = number_format($seconds * 1000, 1, '.', '') . ' ms';
+            }
+        }
+        return [
+            'elapsed' => $elapsed !== '' ? $elapsed : 'Unavailable',
+            'memory' => number_format(memory_get_usage(true) / 1048576, 1, '.', '') . ' MiB',
+            'peak' => number_format(memory_get_peak_usage(true) / 1048576, 1, '.', '') . ' MiB',
+            'queries' => function_exists('get_num_queries') ? (string)get_num_queries() : 'Unavailable',
+            'object_cache' => function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()
+                ? 'External object cache configured' : 'No external object cache detected',
+        ];
+    }
+
     public static function signals(): array {
         $software = (string)($_SERVER['SERVER_SOFTWARE'] ?? '');
         if (stripos($software, 'litespeed') !== false) $origin = 'LiteSpeed server header';

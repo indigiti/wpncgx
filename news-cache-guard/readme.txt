@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc7
+Stable tag: 1.2.0-rc8
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,11 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc8 =
+* Preserve expiring Redis counter initialization and skip redundant unique-URL accounting after a definitive enforced miss-budget violation; full dry-run telemetry remains.
+* Reuse recent history rows to avoid an extra database query when displaying the most recent editor.
+* Show honest read-only PHP memory, elapsed time and query-count snapshots in the administrator cache panel.
 
 = 1.2.0-rc7 =
 * Reuse settings, module options and safe cache-key patterns per PHP request, isolated across Multisite blogs.

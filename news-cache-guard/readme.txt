@@ -3,7 +3,7 @@ Contributors: dcn
 Tags: litespeed, cache, redis, rate-limit, news, bots
 Requires at least: 6.2
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc9
+Stable tag: 1.2.0-rc10
 License: GPLv2 or later
 
 Integrated newsroom publishing governance, audit and security controls, alongside LiteSpeed cache and origin protection. Editorial enforcement is optional and off by default.
@@ -59,6 +59,9 @@ More-specific CIDRs win.
 * Test on staging before production deployment.
 
 == Changelog ==
+
+= 1.2.0-rc10 =
+* Integrate read-only Worker Guard readiness and setup into the dashboard; keep the legacy Tools page.
 
 = 1.2.0-rc9 =
 * Show bounded, read-only Worker Guard queue and WP-Cron readiness diagnostics to authorised administrators.

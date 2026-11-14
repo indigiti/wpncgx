@@ -1,3 +1,8 @@
+# v1.2.0-rc10 — Worker Guard dashboard (testing)
+
+- Add read-only Worker Guard readiness and setup to the main dashboard.
+- Link from Overview without inspecting the queue; keep the legacy Tools page.
+
 # v1.2.0-rc9 — P3 background work reliability (staging)
 
 - Add on-demand, read-only WP-Cron and Action Scheduler diagnostics to the existing Tools → PM Worker Guard admin page.

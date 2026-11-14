@@ -33,6 +33,7 @@ function wp_cache_get($key, $group) { return $GLOBALS['ncg_cache'][$group][$key]
 function wp_cache_delete($key, $group) { unset($GLOBALS['ncg_cache'][$group][$key]); return true; }
 function add_action(...$args) {}
 function add_filter(...$args) {}
+function nocache_headers() { $GLOBALS['ncg_actions'][] = 'wordpress_nocache_headers'; }
 function do_action($action, ...$args) { $GLOBALS['ncg_actions'][] = $action; }
 function is_admin() { return false; }
 function wp_doing_cron() { return false; }
@@ -184,6 +185,10 @@ $GLOBALS['is_search'] = true;
 (new \NCG\Guard())->frontend_guard();
 $GLOBALS['is_search'] = false;
 check(\NCG\Counter::stat_value('would_block') === 1, 'MU-handled search is not counted during either regular-plugin hook');
+check(defined('DONOTCACHEPAGE') && DONOTCACHEPAGE &&
+    in_array('wordpress_nocache_headers', $GLOBALS['ncg_actions'], true) &&
+    in_array('litespeed_control_set_nocache', $GLOBALS['ncg_actions'], true),
+    'Search reaching the guard sends WordPress and LiteSpeed no-cache signals');
 
 config(['rest_limit'=>1, 'dry_run'=>1]);
 $_GET = [];

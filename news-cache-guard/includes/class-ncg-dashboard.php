@@ -340,7 +340,7 @@ final class Dashboard {
         $s = Settings::get_all();
         self::note('Newsroom Guard is not a full-page cache. LiteSpeed, Cloudways Varnish and Cloudflare operate outside PHP; these signals do not prove cache hits or purges.');
         echo '<div class="nrg-columns">';
-        self::card_open('Cache policy', 'Preserve built-in LiteSpeed privacy exclusions');
+        self::card_open('LiteSpeed cache policy', 'These settings do not configure Breeze or Varnish.');
         echo '<div class="nrg-system-list">';
         foreach ([
             ['LiteSpeed integration',LiteSpeed::detected() ? 'Detected':'Not detected'],
@@ -350,8 +350,9 @@ final class Dashboard {
         echo '</div>'; self::card_close();
         self::card_open('Hosting cache signals', 'Read-only PHP-side indications; no remote checks or cache changes');
         echo '<div class="nrg-system-list">';
-        foreach (CacheEnvironment::signals() as $name=>$value) {
-            $labels = ['origin'=>'Origin web-server hint','litespeed'=>'LiteSpeed hook','breeze'=>'Breeze plugin','varnish'=>'Varnish','edge'=>'Cloudflare HTML edge cache'];
+        $signals = CacheEnvironment::signals();
+        foreach ($signals as $name=>$value) {
+            $labels = ['integration'=>'Page-cache integration','origin'=>'Origin web-server hint','litespeed'=>'LiteSpeed hook','breeze'=>'Breeze plugin','varnish'=>'Varnish','edge'=>'Cloudflare HTML edge cache'];
             echo '<div><span>' . esc_html($labels[$name] ?? $name) . '</span><strong>' . esc_html($value) . '</strong></div>';
         }
         echo '</div><p class="nrg-footnote">Do not enable a second page cache or purge an entire CDN based on these signals. Verify which cache handles HTML and its actual invalidation before rollout.</p>';
@@ -371,7 +372,14 @@ final class Dashboard {
         }
         echo '</div><p class="nrg-footnote">Snapshot is collected only while an administrator opens this panel. It excludes cached public requests and cannot establish total server CPU usage, Redis ops or cache-hit ratio.</p>';
         self::card_close();
-        self::card_open('Cache controls', 'Saves only these values; all other origin settings are preserved');
+        self::card_open('Breeze / Cloudways', 'Breeze manages its own page-cache exclusions and invalidation.');
+        echo '<p>Configure exclusions and Auto Purge Varnish in Breeze. Newsroom Guard does not add a duplicate Breeze, Varnish or Cloudflare purge.</p>';
+        echo '<p>On staging, confirm a corrected article and its homepage and category listings refresh. Test search, previews and authenticated pages separately, and verify public article HITs with response headers and origin logs.</p>';
+        if (strpos($signals['integration'], 'LiteSpeed and Breeze') === 0) {
+            self::note('Both integrations were detected. Avoid enabling two WordPress full-page caches for the same site.', 'warning');
+        }
+        self::card_close();
+        self::card_open('LiteSpeed controls', 'Newsroom Guard’s URL purges and .htaccess cache rules are LiteSpeed-only. These settings do not change Breeze or Varnish.');
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<input type="hidden" name="section" value="cache">';
         self::checkbox('query_collapse','Normalize tracking query keys',!!$s['query_collapse'],'Keep protected and content-changing keys in cache identity.');

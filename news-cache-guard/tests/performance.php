@@ -110,9 +110,19 @@ $GLOBALS['perf_actions']=[];
 $purger->on_after_insert(123,new WP_Post(123,'publish'),true,new WP_Post(123,'future'));
 perf_check(count(array_filter($GLOBALS['perf_actions'],static fn($a)=>$a[0]==='litespeed_purge_url'))>0,
     'Scheduled article publication still invalidates');
+perf_check(\NCG\CacheEnvironment::signals()['integration']==='No supported page-cache plugin detected',
+    'No supported plugin is not presented as an active cache');
 $GLOBALS['perf_options'][1]['active_plugins']=['breeze/breeze.php'];
 $signals=\NCG\CacheEnvironment::signals();
 perf_check($signals['breeze']==='Breeze is listed as active','Breeze detection read-only and correctly labeled');
+perf_check(strpos($signals['integration'], 'Breeze detected') === 0, 'Breeze owns its cache and purge settings');
+$_SERVER['X-LSCACHE']='1';
+perf_check(strpos(\NCG\CacheEnvironment::signals()['integration'], 'LiteSpeed and Breeze') === 0,
+    'Dual signals are not presented as verified page-cache ownership');
+$GLOBALS['perf_options'][1]['active_plugins']=[];
+perf_check(\NCG\CacheEnvironment::signals()['integration']==='LiteSpeed integration detected',
+    'LiteSpeed-only integration remains visible');
+unset($_SERVER['X-LSCACHE']);
 perf_check(strpos($signals['varnish'],'Unverified')===0 &&
     strpos($signals['edge'],'Unverified')===0,'PHP hints do not assert Varnish/Cloudflare cache availability');
 $GLOBALS['perf_schedule_reads']=0;

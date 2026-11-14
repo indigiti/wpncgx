@@ -67,7 +67,7 @@ final class Guard {
         if (!$this->enabled() || !$this->is_frontend_candidate()) return;
         if (!$this->init_identity()) {
             // Preserve no-cache instructions even when rate limiting fails open.
-            if (is_search() || is_404()) LiteSpeed::no_cache();
+            if (is_search() || is_404()) self::protect_dynamic_page();
             return;
         }
         if ($this->is_denied()) { $this->block_or_dry('denylist'); if ($this->wouldBlock) return; }
@@ -82,7 +82,7 @@ final class Guard {
         if ($this->policy === 'force_cache') $this->policy = 'safe_shared';
 
         if (is_search()) {
-            LiteSpeed::no_cache();
+            self::protect_dynamic_page();
             if (!$this->earlySearchChecked && !defined('NCG_MU_SEARCH_GUARD_HANDLED')) {
                 $count = Counter::increment('search', $this->identity, (int)Settings::get('search_window', 60));
                 if ($count > (int)Settings::get('search_limit', 10)) $this->block_or_dry('search-rate');
@@ -91,7 +91,7 @@ final class Guard {
         }
 
         if (is_404()) {
-            LiteSpeed::no_cache();
+            self::protect_dynamic_page();
             $count = Counter::increment('404', $this->identity, (int)Settings::get('window_404', 60));
             Counter::stat('origin_404');
             if ($count > (int)($rule['limit_404'] ?? Settings::get('limit_404', 2))) $this->block_or_dry('404-rate');
@@ -230,6 +230,14 @@ final class Guard {
         if (!empty($_SERVER['HTTP_AUTHORIZATION']) || !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])
             || !empty($_SERVER['PHP_AUTH_USER']) || !empty($_SERVER['HTTP_X_API_KEY'])) return false;
         return true;
+    }
+
+    private static function protect_dynamic_page(): void {
+        // Keep the native LiteSpeed hook. Signal PHP page-cache plugins and
+        // HTTP caches on requests that reach WordPress, not on upstream HITs.
+        if (!defined('DONOTCACHEPAGE')) define('DONOTCACHEPAGE', true);
+        nocache_headers();
+        LiteSpeed::no_cache();
     }
 
     private function is_safe_public_request(): bool {

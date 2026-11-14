@@ -47,9 +47,13 @@ final class CacheEnvironment {
             $breeze = $breeze || array_key_exists('breeze/breeze.php', $network);
         }
 
+        $litespeed = LiteSpeed::detected();
         return [
             'origin' => $origin,
-            'litespeed' => LiteSpeed::detected()
+            'integration' => $litespeed && $breeze ? 'LiteSpeed and Breeze signals detected — verify which plugin owns page caching'
+                : ($litespeed ? 'LiteSpeed integration detected'
+                    : ($breeze ? 'Breeze detected — Breeze owns its cache settings and purges' : 'No supported page-cache plugin detected')),
+            'litespeed' => $litespeed
                 ? 'LiteSpeed integration signal detected (HIT not verified)'
                 : 'LiteSpeed integration not detected',
             'breeze' => $breeze ? 'Breeze is listed as active' : 'Breeze not listed as active',

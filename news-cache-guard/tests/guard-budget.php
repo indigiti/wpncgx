@@ -55,7 +55,7 @@ final class IP {
     public static function in_any_cidr(string $ip,array $cidrs): bool { return false; }
 }
 final class LiteSpeed {
-    public static function no_cache(): void {}
+    public static function no_cache(): void { $GLOBALS['budget_lscache_nocache'] = true; }
 }
 function is_admin(): bool { return false; }
 function wp_doing_cron(): bool { return false; }
@@ -71,7 +71,7 @@ function is_archive(): bool { return false; }
 function is_feed(): bool { return false; }
 function is_preview(): bool { return false; }
 function status_header(int $status): void { $GLOBALS['budget_status'] = $status; }
-function nocache_headers(): void {}
+function nocache_headers(): void { $GLOBALS['budget_nocache'] = true; }
 function budget_check(bool $ok, string $msg): void {
     if (!$ok) { \fwrite(STDERR, "FAIL: $msg\n"); exit(1); }
     echo "PASS: $msg\n";
@@ -112,3 +112,11 @@ if ($GLOBALS['budget_mode']!=='enforce') {
 \ob_end_clean();
 \fwrite(STDERR, "FAIL: Enforced over-budget request did not exit.\n");
 exit(1);
+
+// Run after existing checks: the request-wide constant cannot be unset.
+$method = new \ReflectionMethod(Guard::class, 'protect_dynamic_page');
+$method->setAccessible(true);
+$GLOBALS['budget_nocache'] = $GLOBALS['budget_lscache_nocache'] = false;
+$method->invoke(null);
+budget_check(defined('DONOTCACHEPAGE') && DONOTCACHEPAGE && $GLOBALS['budget_nocache'] && $GLOBALS['budget_lscache_nocache'],
+    'Dynamic pages emit generic no-cache signals and preserve the LiteSpeed hook');

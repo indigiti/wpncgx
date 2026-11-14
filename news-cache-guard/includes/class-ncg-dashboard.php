@@ -281,14 +281,19 @@ final class Dashboard {
             ['LiteSpeed', LiteSpeed::detected() ? 'Detected' : 'Not detected', LiteSpeed::detected()],
             ['Persistent object cache', Counter::available() ? 'Configured · health not certified' : 'Unavailable', Counter::available()],
             ['Origin protection', Modules::on('bot') && Settings::get('enabled',1) ? (Settings::get('dry_run',1) ? 'Dry run' : 'Enforcing') : 'Disabled', Modules::on('bot')],
-            ['Worker Guard', Modules::on('worker') ? 'Enabled' : 'Disabled', Modules::on('worker')],
+            ['Worker Guard', Modules::on('worker') ? 'Enabled · Cron unverified' : 'Disabled · Cron unverified', null],
             ['Editorial module', !empty($ed['master']) ? 'Enabled' : 'Off by default', !empty($ed['master'])],
             ['Early Search Guard MU', defined('NCG_MU_SEARCH_GUARD_LOADED') ? 'Active independently' : 'Not installed', defined('NCG_MU_SEARCH_GUARD_LOADED')],
         ];
         echo '<div class="nrg-system-list">';
         foreach ($rows as [$label,$state,$on]) {
-            echo '<div><span>' . esc_html($label) . '</span><strong><i class="nrg-led ' .
-                ($on ? 'is-on' : '') . '"></i>' . esc_html($state) . '</strong></div>';
+            echo '<div><span>' . esc_html($label) . '</span><strong>';
+            if ($on === null) {
+                echo '<a href="' . esc_url(self::url('workers')) . '">' . esc_html($state) . '</a>';
+            } else {
+                echo '<i class="nrg-led ' . ($on ? 'is-on' : '') . '" aria-hidden="true"></i>' . esc_html($state);
+            }
+            echo '</strong></div>';
         }
         echo '</div>';
     }
@@ -397,28 +402,85 @@ final class Dashboard {
     }
 
     private static function workers(): void {
-        self::card_open('Worker protection', 'Limits background workloads without changing PHP-FPM process counts');
-        self::system_rows_worker();
+        $enabled = Modules::on('worker');
+        $scheduler = class_exists('ActionScheduler', false) || function_exists('as_schedule_single_action');
+        $rank = defined('RANK_MATH_VERSION') || class_exists('RankMath', false) || class_exists('\\RankMath\\Helper', false);
+        $yoast = defined('WPSEO_VERSION') || class_exists('WPSEO_Options', false);
+        $cron_disabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
+        $async_disabled = $enabled && WorkerGuard::disable_async_runner();
+
+        self::card_open('Worker and cron readiness', 'Read-only snapshot. A scheduled timestamp is not evidence that the job ran.');
+        if ($cron_disabled) {
+            self::note('Page-triggered WP-Cron is off. Verify the external WP-Cron trigger on the server.', 'warning');
+        }
+        if (!$scheduler) {
+            self::note('Action Scheduler was not detected on this site. This does not determine WP-Cron health.');
+        }
+        require_once __DIR__ . '/class-ncg-worker-diagnostics.php';
+        $diagnostics = WorkerDiagnostics::snapshot();
+        self::worker_rows([
+            'WP-Cron trigger' => $diagnostics['wp_cron'],
+            'Action Scheduler' => $scheduler ? 'Detected' : 'Not detected',
+            'Action Scheduler async' => $diagnostics['async'],
+            'Next WP-Cron queue event' => $diagnostics['next_queue'],
+            'Next editorial cleanup event' => $diagnostics['next_cleanup'],
+            'Oldest pending Action Scheduler job' => $diagnostics['oldest_pending'],
+            'Queue indication' => $diagnostics['queue_signal'],
+            'External server cron' => $diagnostics['server_cron'],
+            'Operational check' => $diagnostics['risk'],
+        ]);
+        self::card_close();
+
+        self::card_open('Worker protection', 'Configured caps apply only when Worker Guard and the relevant integration are active. They do not change PHP-FPM process counts.');
+        self::worker_rows([
+            'Action Scheduler actions per batch' => (string) WorkerGuard::batch_size(),
+            'Action Scheduler concurrent batches' => (string) WorkerGuard::concurrent_batches(),
+            'Yoast sitemap cap' => WorkerGuard::yoast_cap() . ' entries · ' . ($yoast ? 'Detected' : 'Not detected'),
+            'Rank Math sitemap cap' => WorkerGuard::rank_math_cap() . ' links · ' . ($rank ? 'Detected' : 'Not detected'),
+            'Rank Math sitemap cache policy' => WorkerGuard::rank_math_sitemap_cache(false)
+                ? 'Force enabled (opt-in)' : 'Respect Rank Math and other filters',
+        ]);
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        self::checkbox('worker','Enable Worker Guard',Modules::on('worker'),
-            'Turning this off removes Action Scheduler and sitemap caps. Existing cron configuration is unchanged.');
+        self::checkbox('worker','Enable Worker Guard',$enabled,
+            'Turning this off removes Worker Guard filters. Existing cron configuration is unchanged.');
         echo '<input type="hidden" name="switch" value="worker">';
         self::action_form('nrg_save_modules','Save Worker Guard setting');
-        echo '</form><a class="nrg-text-link" href="' . esc_url(admin_url('tools.php?page=ncg-worker-guard')) . '">Detailed worker diagnostics and cron instructions →</a>';
+        echo '</form>';
+        self::card_close();
+
+        self::card_open('Advanced setup', 'Server-side checks and optional overrides. No commands are run from this dashboard.');
+        echo '<details><summary>Show cron and wp-config.php instructions</summary>';
+        echo '<p>Check your server scheduler logs for a successful WP-Cron run. A dedicated Action Scheduler runner does not run ordinary WP-Cron events such as scheduled posts or editorial cleanup.</p>';
+        if ($scheduler) {
+            $cli = 'wp --path=' . escapeshellarg(ABSPATH) . ' action-scheduler run --batch-size=' . WorkerGuard::batch_size() . ' --batches=1';
+            echo '<p>After confirming the correct WordPress site, use this SSH command to test one batch. It executes due actions; it is not a dry run.</p>';
+            self::worker_code($cli);
+            if ($async_disabled) {
+                echo '<p>Async loopbacks are already disabled by Worker Guard. Verify the replacement runner executes successfully on its schedule.</p>';
+            } else {
+                echo '<p>Do not disable async loopbacks until a replacement runner has been verified on its schedule. With Worker Guard enabled, the opt-in override is:</p>';
+                self::worker_code("define( 'PMWG_DISABLE_ASYNC_RUNNER', true );");
+            }
+        }
+        echo '<p>Optional wp-config.php overrides (examples):</p>';
+        self::worker_code("define( 'PMWG_ACTION_SCHEDULER_BATCH_SIZE', 5 );\n"
+            . "define( 'PMWG_ACTION_SCHEDULER_CONCURRENT_BATCHES', 1 );\n"
+            . "define( 'PMWG_RANKMATH_LINKS_PER_SITEMAP', 200 );\n"
+            . "define( 'PMWG_YOAST_LINKS_PER_SITEMAP', 250 );");
+        echo '<p>If you change sitemap caps, clear the active SEO plugin’s sitemap cache as applicable and verify its sitemap index.</p></details>';
         self::card_close();
     }
 
-    private static function system_rows_worker(): void {
-        $rows = [
-            ['Action Scheduler claim cap',(string)WorkerGuard::batch_size()],
-            ['Concurrent claims cap',(string)WorkerGuard::concurrent_batches()],
-            ['Yoast sitemap entries',(string)WorkerGuard::yoast_cap()],
-            ['Rank Math sitemap entries',(string)WorkerGuard::rank_math_cap()],
-            ['Async loopbacks',WorkerGuard::disable_async_runner() ? 'Disabled by wp-config' : 'Preserved'],
-        ];
+    private static function worker_rows(array $rows): void {
         echo '<div class="nrg-system-list">';
-        foreach($rows as [$k,$v]) echo '<div><span>' . esc_html($k) . '</span><strong>' . esc_html($v) . '</strong></div>';
+        foreach ($rows as $label => $value) {
+            echo '<div><span>' . esc_html($label) . '</span><strong>' . esc_html($value) . '</strong></div>';
+        }
         echo '</div>';
+    }
+
+    private static function worker_code(string $code): void {
+        echo '<pre style="white-space:pre-wrap;overflow-wrap:anywhere"><code>' . esc_html($code) . '</code></pre>';
     }
 
     private static function approvals(): void {

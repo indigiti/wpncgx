@@ -381,7 +381,46 @@ final class Dashboard {
         self::checkbox('purge_feeds','Purge feeds',!!$s['purge_feeds']);
         self::checkbox('purge_sitemap','Purge sitemaps',!!$s['purge_sitemap']);
         self::action_form('nrg_save_core');echo '</form>';self::card_close();echo '</div>';
+        self::autoload_audit();
         self::note('Check the generated .htaccess block and Cloudflare behaviour after every cache-rule change.', 'warning');
+    }
+
+    private static function autoload_audit(): void {
+        self::card_open('Autoload Audit', 'Inspect the database footprint of autoloaded options for the current site.');
+        echo '<form method="post" action="' . esc_url(self::url('cache') . '#nrg-autoload-audit') . '">';
+        echo '<div id="nrg-autoload-audit">';
+        wp_nonce_field('nrg_autoload_audit', 'nrg_autoload_nonce');
+        submit_button('Run read-only audit', 'secondary', 'nrg_run_autoload_audit');
+        echo '</div></form>';
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['nrg_run_autoload_audit'])) {
+            $nonce = $_POST['nrg_autoload_nonce'] ?? '';
+            if (!is_string($nonce) || !wp_verify_nonce(wp_unslash($nonce), 'nrg_autoload_audit')) {
+                self::note('Audit request expired or invalid. Run the audit again.', 'warning');
+            } else {
+                $report = CacheEnvironment::autoload_audit();
+                if ($report === null) {
+                    self::note('The database audit was unavailable. No options were changed.', 'warning');
+                } else {
+                    self::worker_rows([
+                        'Total autoloaded value bytes' => number_format_i18n($report['bytes']),
+                        'Autoloaded options' => number_format_i18n($report['count']),
+                    ]);
+                    if ($report['largest']) {
+                        echo '<h3>Largest autoloaded options (up to 20)</h3>';
+                        echo '<table class="widefat striped"><thead><tr><th scope="col">Option name</th><th scope="col">Value size (bytes)</th></tr></thead><tbody>';
+                        foreach ($report['largest'] as $option) {
+                            echo '<tr><th scope="row" style="overflow-wrap:anywhere">' . esc_html($option['option_name']) .
+                                '</th><td>' . esc_html(number_format_i18n((int) $option['bytes'])) . '</td></tr>';
+                        }
+                        echo '</tbody></table>';
+                    }
+                }
+            }
+        }
+
+        echo '<p class="nrg-footnote">Reads stored value sizes, not PHP memory use. Option values are never retrieved or displayed. No options, cache entries or schedules are changed.</p>';
+        self::card_close();
     }
 
     private static function bots(): void {

@@ -31,6 +31,49 @@ final class CacheEnvironment {
         ];
     }
 
+    /**
+     * Inspect stored sizes without loading option values into PHP or changing autoload.
+     * Only an authorised, nonce-validated admin action should call this method.
+     */
+    public static function autoload_audit(): ?array {
+        if (!current_user_can('manage_options')) return null;
+
+        global $wpdb;
+        // Core chooses the active autoload values (6.6+); older versions use yes.
+        $flags = function_exists('wp_autoload_values_to_autoload')
+            ? array_values(wp_autoload_values_to_autoload()) : ['yes'];
+        if (!$flags) return ['bytes' => 0, 'count' => 0, 'largest' => []];
+        $placeholders = implode(', ', array_fill(0, count($flags), '%s'));
+
+        // Do not print raw database errors on the dashboard. Restore the caller's state.
+        $previous = $wpdb->suppress_errors(true);
+        try {
+            $totals = $wpdb->get_row($wpdb->prepare(
+                "SELECT COALESCE(SUM(OCTET_LENGTH(option_value)), 0) AS bytes, COUNT(*) AS option_count
+                FROM {$wpdb->options} WHERE autoload IN ($placeholders)", $flags
+            ), ARRAY_A);
+            if (!is_array($totals) || $wpdb->last_error !== '') return null;
+
+            $largest = [];
+            if ((int) $totals['option_count'] > 0) {
+                $largest = $wpdb->get_results($wpdb->prepare(
+                    "SELECT option_name, OCTET_LENGTH(option_value) AS bytes
+                    FROM {$wpdb->options} WHERE autoload IN ($placeholders)
+                    ORDER BY bytes DESC, option_name ASC LIMIT 20", $flags
+                ), ARRAY_A);
+                if (!is_array($largest) || $wpdb->last_error !== '') return null;
+            }
+
+            return [
+                'bytes' => (int) $totals['bytes'],
+                'count' => (int) $totals['option_count'],
+                'largest' => $largest,
+            ];
+        } finally {
+            $wpdb->suppress_errors($previous);
+        }
+    }
+
     public static function signals(): array {
         $software = (string)($_SERVER['SERVER_SOFTWARE'] ?? '');
         if (stripos($software, 'litespeed') !== false) $origin = 'LiteSpeed server header';

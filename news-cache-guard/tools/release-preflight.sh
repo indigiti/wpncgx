@@ -39,6 +39,8 @@ run_test news-cache-guard/tests/branding.php
 run_test news-cache-guard/tests/media-policy.php
 run_test news-cache-guard/tests/github-updates.php
 run_test news-cache-guard/tests/performance.php
+run_test news-cache-guard/tests/autoload-audit.php
+run_test news-cache-guard/tests/autoload-audit.php legacy
 run_test news-cache-guard/tests/counter-efficiency.php
 run_test news-cache-guard/tests/guard-budget.php dry
 run_test news-cache-guard/tests/guard-budget.php enforce

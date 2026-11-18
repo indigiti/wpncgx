@@ -40,11 +40,8 @@ final class Dashboard {
     }
 
     public static function menu(): void {
-        add_menu_page('Newsroom Guard', 'Newsroom Guard', 'manage_options', self::SLUG,
-            [self::class, 'render'], 'dashicons-shield-alt', 58);
-        add_submenu_page(self::SLUG, 'Overview', 'Overview', 'manage_options', self::SLUG, [self::class, 'render']);
-        // The Module Manager is part of the unified dashboard's sidebar.
-        // Do not register a second, misleading WordPress admin submenu.
+        add_management_page('Newsroom Guard', 'Newsroom Guard', 'manage_options', self::SLUG,
+            [self::class, 'render']);
     }
 
     /**
@@ -55,6 +52,18 @@ final class Dashboard {
     public static function redirect_legacy_pages(): void {
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
         $page = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        if ($page === self::SLUG && ($GLOBALS['pagenow'] ?? '') === 'admin.php') {
+            if (!current_user_can('manage_options')) return;
+            $args = [];
+            foreach (['panel', 'review_id', 'after', 'before', 'actor', 'event', 'paged',
+                'nrg_notice', 'nrg_review_notice', 'ncg_notice', 'ncg_cache_probe'] as $key) {
+                if (isset($_GET[$key]) && is_string($_GET[$key])) {
+                    $args[$key] = sanitize_text_field(wp_unslash($_GET[$key]));
+                }
+            }
+            wp_safe_redirect(self::url(self::current_tab(), $args), 302);
+            exit;
+        }
         if (!in_array($page, ['news-cache-guard', 'newsroom-modules'], true)) return;
         if (!current_user_can('manage_options')) return;
 
@@ -81,18 +90,18 @@ final class Dashboard {
     }
 
     public static function assets($hook): void {
-        if (!in_array($hook, ['toplevel_page_' . self::SLUG, 'posts_page_ncg-editorial-reviews', 'admin_page_ncg-editorial-propose'], true)) return;
+        if (!in_array($hook, ['tools_page_' . self::SLUG, 'posts_page_ncg-editorial-reviews', 'admin_page_ncg-editorial-propose'], true)) return;
         wp_enqueue_style('nrg-admin', NCG_URL . 'assets/newsroom-dashboard.css', [], NCG_VERSION);
         // WordPress dashicons are already included on most admin screens.
         wp_enqueue_style('dashicons');
     }
 
     public static function url(string $tab = 'overview', array $args = []): string {
-        return add_query_arg(array_merge(['page'=>self::SLUG, 'tab'=>$tab], $args), admin_url('admin.php'));
+        return add_query_arg(array_merge(['page'=>self::SLUG, 'tab'=>$tab], $args), admin_url('tools.php'));
     }
 
     private static function current_tab(): string {
-        $tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'overview';
+        $tab = isset($_GET['tab']) && is_string($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'overview';
         return array_key_exists($tab, self::sections()) ? $tab : 'overview';
     }
 

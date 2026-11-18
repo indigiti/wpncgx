@@ -18,7 +18,7 @@ function branding_check(bool $ok, string $message): void {
     echo "PASS: $message\n";
 }
 branding_check((bool)preg_match('/^\s*\* Plugin Name: Newsroom Guard\s*$/m', $plugin), 'WordPress Plugins list shows Newsroom Guard');
-branding_check(strpos($dashboard, "add_menu_page('Newsroom Guard', 'Newsroom Guard'") !== false, 'Unified admin menu says Newsroom Guard');
+branding_check(strpos($dashboard, "add_management_page('Newsroom Guard', 'Newsroom Guard'") !== false, 'Unified admin menu says Newsroom Guard');
 branding_check(strpos($admin, "add_options_page('Newsroom Guard', 'Newsroom Guard'") === false, 'Legacy Settings menu is hidden');
 branding_check(strpos($admin, '<h1>Newsroom Guard ') !== false, 'Main administration heading says Newsroom Guard');
 branding_check(strpos($editorial_admin, '<h1>Newsroom Guard ') !== false, 'Editorial administration heading says Newsroom Guard');

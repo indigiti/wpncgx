@@ -18,8 +18,15 @@ nrg_navigation_assert(strpos($admin, "add_options_page('Newsroom Guard'") === fa
     'Legacy Settings > Newsroom Guard menu is not registered');
 nrg_navigation_assert(strpos($dashboard, "add_submenu_page(self::SLUG, 'Module Manager'") === false,
     'No duplicate Module Manager submenu is registered');
-nrg_navigation_assert(strpos($dashboard, "add_menu_page('Newsroom Guard'") !== false,
-    'Single top-level Newsroom Guard menu is registered');
+nrg_navigation_assert(strpos($dashboard, "add_management_page('Newsroom Guard', 'Newsroom Guard', 'manage_options'") !== false &&
+    strpos($dashboard, "add_menu_page('Newsroom Guard'") === false,
+    'Newsroom Guard is registered under Tools without a top-level duplicate');
+nrg_navigation_assert(strpos($dashboard, "admin_url('tools.php')") !== false &&
+    strpos($dashboard, "'tools_page_' . self::SLUG") !== false,
+    'Dashboard links and scoped CSS use the Tools page');
+nrg_navigation_assert(strpos($dashboard, "(\$GLOBALS['pagenow'] ?? '') === 'admin.php'") !== false &&
+    strpos($dashboard, 'wp_safe_redirect(self::url(self::current_tab(), $args), 302)') !== false,
+    'Former top-level dashboard bookmarks redirect to the matching Tools tab');
 nrg_navigation_assert(strpos($dashboard, "add_action('admin_init', [self::class, 'redirect_legacy_pages'], 1)") !== false,
     'Both legacy URLs redirect before the admin screen renders');
 nrg_navigation_assert(strpos($dashboard, "'news-cache-guard', 'newsroom-modules'") !== false,
